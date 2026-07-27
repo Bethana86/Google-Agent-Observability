@@ -201,14 +201,14 @@
         <!-- Metrics Section -->
         <section class="metrics-section">
             <div class="section-title">
-                <h2><i class="fa-solid fa-chart-line animate-pulse"></i> OpenTelemetry Metrics Dashboard (40 Active Metrics)</h2>
+                <h2><i class="fa-solid fa-chart-line animate-pulse"></i> OpenTelemetry Metrics Dashboard (50 Active Metrics)</h2>
                 <p>Telemetry fetched directly from InMemoryMetricReader under <code>gcp.vertex.agent</code> OTel standard</p>
             </div>
             
             <div class="metrics-tabs">
-                <button class="tab-btn active" data-tab="tab-agents">Agent Performance (13)</button>
-                <button class="tab-btn" data-tab="tab-tools">Tool Diagnostics (7)</button>
-                <button class="tab-btn" data-tab="tab-system">Session & Workflow (8)</button>
+                <button class="tab-btn active" data-tab="tab-agents">Agent Performance (20)</button>
+                <button class="tab-btn" data-tab="tab-tools">Tool Diagnostics (8)</button>
+                <button class="tab-btn" data-tab="tab-system">Session & Workflow (10)</button>
                 <button class="tab-btn" data-tab="tab-model">Model Engine (6)</button>
                 <button class="tab-btn" data-tab="tab-resources">System Resources (6)</button>
             </div>
@@ -365,6 +365,76 @@
                             <div id="no-data-agent-handoffs" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
                         </div>
                     </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Reasoning Drift</h3>
+                            <span class="metric-desc">gen_ai.agent.reasoning.drift (drift score)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-agent-reasoning-drift"></canvas>
+                            <div id="no-data-agent-reasoning-drift" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>RCA Search Depth</h3>
+                            <span class="metric-desc">gen_ai.agent.root_cause.depth (nodes depth)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-agent-rca-depth"></canvas>
+                            <div id="no-data-agent-rca-depth" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>RCA Confidence</h3>
+                            <span class="metric-desc">gen_ai.agent.root_cause.confidence (%)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-agent-rca-confidence"></canvas>
+                            <div id="no-data-agent-rca-confidence" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Context Memory Reads</h3>
+                            <span class="metric-desc">gen_ai.agent.memory.reads (count)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-agent-mem-reads"></canvas>
+                            <div id="no-data-agent-mem-reads" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Context Memory Writes</h3>
+                            <span class="metric-desc">gen_ai.agent.memory.writes (count)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-agent-mem-writes"></canvas>
+                            <div id="no-data-agent-mem-writes" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Human Feedback Actions</h3>
+                            <span class="metric-desc">gen_ai.agent.feedback.count (count)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-agent-feedback"></canvas>
+                            <div id="no-data-agent-feedback" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Fallback Policy Triggers</h3>
+                            <span class="metric-desc">gen_ai.agent.fallback.triggered (count)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-agent-fallback"></canvas>
+                            <div id="no-data-agent-fallback" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -458,6 +528,16 @@
                         <div class="card-body chart-container">
                             <canvas id="chart-tool-concurrency"></canvas>
                             <div id="no-data-tool-concurrency" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Tool Execution Timeouts</h3>
+                            <span class="metric-desc">gen_ai.tool.timeout.count (count)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-tool-timeout"></canvas>
+                            <div id="no-data-tool-timeout" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
                         </div>
                     </div>
                 </div>
@@ -563,6 +643,26 @@
                         <div class="card-body chart-container">
                             <canvas id="chart-workflow-queue-delay"></canvas>
                             <div id="no-data-workflow-queue-delay" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Handoff Sequence Depth</h3>
+                            <span class="metric-desc">gen_ai.workflow.handoff.depth (depth)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-workflow-handoff-depth"></canvas>
+                            <div id="no-data-workflow-handoff-depth" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Session Concurrency Limit</h3>
+                            <span class="metric-desc">gen_ai.workflow.concurrency.limit (slots)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-workflow-concurrency-limit"></canvas>
+                            <div id="no-data-workflow-concurrency-limit" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
                         </div>
                     </div>
                 </div>

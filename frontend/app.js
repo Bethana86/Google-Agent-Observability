@@ -273,10 +273,13 @@ function showChartNoData(show) {
         'no-data-invocation-duration', 'no-data-request-size', 'no-data-response-size', 'no-data-workflow-steps',
         'no-data-agent-calls', 'no-data-agent-errors', 'no-data-token-prompt', 'no-data-token-completion',
         'no-data-token-total', 'no-data-agent-cost', 'no-data-agent-retry', 'no-data-agent-overhead', 'no-data-agent-handoffs',
+        'no-data-agent-reasoning-drift', 'no-data-agent-rca-depth', 'no-data-agent-rca-confidence', 'no-data-agent-mem-reads',
+        'no-data-agent-mem-writes', 'no-data-agent-feedback', 'no-data-agent-fallback',
         'no-data-tool-duration', 'no-data-tool-calls', 'no-data-tool-errors', 'no-data-tool-cache-hit',
-        'no-data-tool-cache-miss', 'no-data-tool-payload', 'no-data-tool-concurrency',
+        'no-data-tool-cache-miss', 'no-data-tool-payload', 'no-data-tool-concurrency', 'no-data-tool-timeout',
         'no-data-workflow-duration', 'no-data-workflow-active', 'no-data-workflow-memory', 'no-data-workflow-tokens',
         'no-data-workflow-turns', 'no-data-workflow-run-success', 'no-data-workflow-run-error', 'no-data-workflow-queue-delay',
+        'no-data-workflow-handoff-depth', 'no-data-workflow-concurrency-limit',
         'no-data-model-latency', 'no-data-model-chunks', 'no-data-model-chunk-latency', 'no-data-model-temp',
         'no-data-model-top-p', 'no-data-model-top-k',
         'no-data-sys-cpu', 'no-data-sys-ram', 'no-data-sys-disk', 'no-data-sys-net-in',
@@ -397,6 +400,55 @@ function renderCharts(metricsData) {
     });
     updateChart('chart-agent-handoffs', createBarChartConfig(agentDisplayLabels, handoffs, 'Handoffs Count', billingColor));
 
+    const reasoningDriftData = metricsData['gen_ai.agent.reasoning.drift'] || [];
+    const drifts = agentLabels.map(label => {
+        const pt = reasoningDriftData.find(d => d.attributes['gen_ai.agent.name'] === label);
+        return pt && pt.count > 0 ? (pt.sum / pt.count) : 0;
+    });
+    updateChart('chart-agent-reasoning-drift', createBarChartConfig(agentDisplayLabels, drifts, 'Avg Drift Score', triageColor));
+
+    const rcaDepthData = metricsData['gen_ai.agent.root_cause.depth'] || [];
+    const rcaDepths = agentLabels.map(label => {
+        const pt = rcaDepthData.find(d => d.attributes['gen_ai.agent.name'] === label);
+        return pt && pt.count > 0 ? (pt.sum / pt.count) : 0;
+    });
+    updateChart('chart-agent-rca-depth', createBarChartConfig(agentDisplayLabels, rcaDepths, 'Avg RCA Depth', supportColor));
+
+    const rcaConfidenceData = metricsData['gen_ai.agent.root_cause.confidence'] || [];
+    const rcaConfidences = agentLabels.map(label => {
+        const pt = rcaConfidenceData.find(d => d.attributes['gen_ai.agent.name'] === label);
+        return pt && pt.count > 0 ? (pt.sum / pt.count) : 0;
+    });
+    updateChart('chart-agent-rca-confidence', createBarChartConfig(agentDisplayLabels, rcaConfidences, 'Avg RCA Conf %', billingColor));
+
+    const memReadsData = metricsData['gen_ai.agent.memory.reads'] || [];
+    const memReads = agentLabels.map(label => {
+        const pt = memReadsData.find(d => d.attributes['gen_ai.agent.name'] === label);
+        return pt ? pt.value : 0;
+    });
+    updateChart('chart-agent-mem-reads', createBarChartConfig(agentDisplayLabels, memReads, 'Memory Reads', techColor));
+
+    const memWritesData = metricsData['gen_ai.agent.memory.writes'] || [];
+    const memWrites = agentLabels.map(label => {
+        const pt = memWritesData.find(d => d.attributes['gen_ai.agent.name'] === label);
+        return pt ? pt.value : 0;
+    });
+    updateChart('chart-agent-mem-writes', createBarChartConfig(agentDisplayLabels, memWrites, 'Memory Writes', triageColor));
+
+    const feedbackData = metricsData['gen_ai.agent.feedback.count'] || [];
+    const feedbacks = agentLabels.map(label => {
+        const pt = feedbackData.find(d => d.attributes['gen_ai.agent.name'] === label);
+        return pt ? pt.value : 0;
+    });
+    updateChart('chart-agent-feedback', createBarChartConfig(agentDisplayLabels, feedbacks, 'Feedback Counts', supportColor));
+
+    const fallbackData = metricsData['gen_ai.agent.fallback.triggered'] || [];
+    const fallbacks = agentLabels.map(label => {
+        const pt = fallbackData.find(d => d.attributes['gen_ai.agent.name'] === label);
+        return pt ? pt.value : 0;
+    });
+    updateChart('chart-agent-fallback', createBarChartConfig(agentDisplayLabels, fallbacks, 'Fallback Triggers', billingColor));
+
     // Update Tab 1 Summary Stats
     const totalCallsCount = agentCalls.reduce((a, b) => a + b, 0);
     const totalTokensCount = totalTokens.reduce((a, b) => a + b, 0);
@@ -460,6 +512,13 @@ function renderCharts(metricsData) {
     });
     updateChart('chart-tool-concurrency', createBarChartConfig(toolDisplayLabels, toolConcurrencies, 'Concurrency', techColor));
 
+    const toolTimeoutData = metricsData['gen_ai.tool.timeout.count'] || [];
+    const toolTimeouts = toolLabels.map(label => {
+        const pt = toolTimeoutData.find(d => d.attributes['gen_ai.agent.name'] === label || d.attributes['gen_ai.tool.name'] === label);
+        return pt ? pt.value : 0;
+    });
+    updateChart('chart-tool-timeout', createBarChartConfig(toolDisplayLabels, toolTimeouts, 'Timeouts Count', '#ef4444'));
+
     // Update Tab 2 Summary Stats
     const totalToolsCount = toolCalls.reduce((a, b) => a + b, 0);
     const totalToolErrorsCount = toolErrors.reduce((a, b) => a + b, 0);
@@ -515,6 +574,16 @@ function renderCharts(metricsData) {
     const wfDelaySessionLabels = wfDelayData.map((pt, i) => `Session #${i+1}`);
     const wfDelayCounts = wfDelayData.map(pt => pt.sum);
     updateChart('chart-workflow-queue-delay', createLineChartConfig(wfDelaySessionLabels, wfDelayCounts, 'Queue Delay (ms)', billingColor));
+
+    const wfHandoffDepthData = metricsData['gen_ai.workflow.handoff.depth'] || [];
+    const wfHandoffSessionLabels = wfHandoffDepthData.map((pt, i) => `Session #${i+1}`);
+    const wfHandoffDepths = wfHandoffDepthData.map(pt => pt.sum / (pt.count || 1));
+    updateChart('chart-workflow-handoff-depth', createLineChartConfig(wfHandoffSessionLabels, wfHandoffDepths, 'Handoff Depth', triageColor));
+
+    const wfConcurrencyLimitData = metricsData['gen_ai.workflow.concurrency.limit'] || [];
+    const wfConcurrencySessionLabels = wfConcurrencyLimitData.map((pt, i) => `Session #${i+1}`);
+    const wfConcurrencyLimits = wfConcurrencyLimitData.map(pt => pt.sum / (pt.count || 1));
+    updateChart('chart-workflow-concurrency-limit', createLineChartConfig(wfConcurrencySessionLabels, wfConcurrencyLimits, 'Concurrency Limit', supportColor));
 
     // Update Tab 3 Summary Stats
     const totalWfRuns = wfDurations.length;

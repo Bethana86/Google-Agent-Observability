@@ -27,7 +27,8 @@ else:
 # Create the global meter instance
 meter = metrics.get_meter("gcp.vertex.agent")
 
-# Custom metrics (bringing the total to 40 including the 5 ADK default metrics)
+# Custom metrics (bringing the total to 50 including the 5 ADK default metrics)
+# Agent Performance (20 total: 4 ADK default + 16 custom)
 agent_calls_counter = meter.create_counter("gen_ai.agent.calls.count", description="Total agent invocations")
 agent_errors_counter = meter.create_counter("gen_ai.agent.errors.count", description="Total agent execution errors")
 agent_token_prompt = meter.create_counter("gen_ai.agent.token.prompt", description="Total input prompt tokens")
@@ -37,14 +38,24 @@ agent_handoff_counter = meter.create_counter("gen_ai.agent.handoff.count", descr
 agent_cost_histogram = meter.create_histogram("gen_ai.agent.cost", description="Estimated API call cost in USD")
 agent_retry_counter = meter.create_counter("gen_ai.agent.retry.count", description="Number of agent call retries")
 agent_overhead_histogram = meter.create_histogram("gen_ai.agent.latency.overhead", description="Scheduling overhead in ms")
+agent_reasoning_drift = meter.create_histogram("gen_ai.agent.reasoning.drift", description="Reasoning shift score over iterations")
+agent_rca_depth = meter.create_histogram("gen_ai.agent.root_cause.depth", description="Root cause search depth in diagnostics")
+agent_rca_confidence = meter.create_histogram("gen_ai.agent.root_cause.confidence", description="Root cause analyzer confidence percent")
+agent_mem_reads = meter.create_counter("gen_ai.agent.memory.reads", description="Total context memory reads")
+agent_mem_writes = meter.create_counter("gen_ai.agent.memory.writes", description="Total context memory writes")
+agent_feedback_count = meter.create_counter("gen_ai.agent.feedback.count", description="Human-in-the-loop feedback actions")
+agent_fallback_triggered = meter.create_counter("gen_ai.agent.fallback.triggered", description="Fallback grounding policy triggers")
 
+# Tool Diagnostics (8 total: 1 ADK default + 7 custom)
 tool_calls_counter = meter.create_counter("gen_ai.tool.calls.count", description="Total tool executions")
 tool_errors_counter = meter.create_counter("gen_ai.tool.errors.count", description="Total tool failures")
 tool_cache_hit = meter.create_counter("gen_ai.tool.cache.hit", description="Tool results retrieved from cache")
 tool_cache_miss = meter.create_counter("gen_ai.tool.cache.miss", description="Tool results missed from cache")
 tool_payload_size = meter.create_histogram("gen_ai.tool.payload.size", description="Tool request/response payload size in bytes")
 tool_concurrency = meter.create_up_down_counter("gen_ai.tool.concurrency", description="Active concurrent tool executions")
+tool_timeout_count = meter.create_counter("gen_ai.tool.timeout.count", description="Total tool execution timeouts")
 
+# Session & Workflow (10 total: 10 custom)
 workflow_duration = meter.create_histogram("gen_ai.workflow.duration", description="Total session workflow duration in ms")
 workflow_active = meter.create_up_down_counter("gen_ai.workflow.active_agents", description="Number of concurrently active agents")
 workflow_memory = meter.create_histogram("gen_ai.workflow.memory.usage", description="Session context window size in characters")
@@ -53,8 +64,10 @@ workflow_turns = meter.create_counter("gen_ai.workflow.turns.count", description
 workflow_errors = meter.create_counter("gen_ai.workflow.errors.count", description="Total workflow run failures")
 workflow_success = meter.create_counter("gen_ai.workflow.success.count", description="Total workflow run successes")
 workflow_queue_delay = meter.create_histogram("gen_ai.workflow.queue.delay", description="Scheduling queue wait time in ms")
+workflow_handoff_depth = meter.create_histogram("gen_ai.workflow.handoff.depth", description="Total handoff sequence depth")
+workflow_concurrency_limit = meter.create_histogram("gen_ai.workflow.concurrency.limit", description="Max concurrency session limit")
 
-# LLM Engine Metrics (6)
+# LLM Engine Metrics (6 total: 6 custom)
 model_latency = meter.create_histogram("gen_ai.model.response.latency", description="Raw model response latency in ms")
 model_chunks = meter.create_counter("gen_ai.model.stream.chunk.count", description="Streaming chunks yielded")
 model_chunk_latency = meter.create_histogram("gen_ai.model.stream.chunk.latency", description="Time between streaming chunks in ms")
@@ -62,7 +75,7 @@ model_temp = meter.create_histogram("gen_ai.model.temperature", description="Tem
 model_top_p = meter.create_histogram("gen_ai.model.top_p", description="Top_p parameter value")
 model_top_k = meter.create_histogram("gen_ai.model.top_k", description="Top_k parameter value")
 
-# System Resources (6)
+# System Resources (6 total: 6 custom)
 sys_cpu = meter.create_histogram("gen_ai.system.cpu.utilization", description="Host CPU utilization percentage")
 sys_ram = meter.create_histogram("gen_ai.system.memory.utilization", description="Host RAM utilization percentage")
 sys_disk = meter.create_histogram("gen_ai.system.disk.utilization", description="Host disk utilization percentage")
@@ -268,6 +281,15 @@ class MockGeminiLlmConnection(BaseLlmConnection):
         model_chunks.add(random.randint(5, 12), {"gen_ai.agent.name": agent_name})
         model_chunk_latency.record(random.uniform(10.0, 25.0), {"gen_ai.agent.name": agent_name})
         workflow_queue_delay.record(random.uniform(1.0, 4.0), {"gen_ai.agent.name": agent_name})
+        
+        # Record reasoning diagnostics and memory operations
+        agent_reasoning_drift.record(random.uniform(0.01, 0.15), {"gen_ai.agent.name": agent_name})
+        agent_rca_depth.record(random.randint(1, 4), {"gen_ai.agent.name": agent_name})
+        agent_rca_confidence.record(random.uniform(85.0, 99.0), {"gen_ai.agent.name": agent_name})
+        agent_mem_reads.add(random.randint(1, 3), {"gen_ai.agent.name": agent_name})
+        agent_mem_writes.add(random.randint(0, 2), {"gen_ai.agent.name": agent_name})
+        agent_feedback_count.add(0, {"gen_ai.agent.name": agent_name})
+        agent_fallback_triggered.add(0, {"gen_ai.agent.name": agent_name})
         
         # Simulate thinking latency
         await asyncio.sleep(random.uniform(0.6, 1.2))
@@ -581,6 +603,11 @@ async def simulate(scenario: str = "general"):
         workflow_memory.record(simulated_context_size, {"session_id": session_id})
         workflow_tokens_active.record(int(simulated_context_size / 4), {"session_id": session_id})
         workflow_turns.add(4 if scenario in ["billing", "technical"] else 2, {"session_id": session_id})
+        
+        # Record new session and tool metrics
+        workflow_handoff_depth.record(3 if scenario in ["billing", "technical"] else 2, {"session_id": session_id})
+        workflow_concurrency_limit.record(10.0, {"session_id": session_id})
+        tool_timeout_count.add(0, {"gen_ai.agent.name": "triage_agent"})
         
         # System resources resource release
         sys_net_out.add(random.randint(5000, 10000), {"node": "collector-us-central"})
