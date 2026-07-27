@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google ADK & Multi-Agent Observability Console</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Outfit:wght@100..900&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-left">
+                <div class="logo-container">
+                    <div class="otel-logo">
+                        <span class="logo-ring outer"></span>
+                        <span class="logo-ring inner"></span>
+                        <span class="logo-dot"></span>
+                    </div>
+                </div>
+                <div class="header-titles">
+                    <h1>Google ADK Observability <span class="badge">Multi-Agent</span></h1>
+                    <p>Production Telemetry & Lifecycle Tracing for Vertex AI Agent Engine</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="status-indicator">
+                    <span class="pulse-dot"></span>
+                    <span class="status-text">Collector: ACTIVE (127.0.0.1:8000)</span>
+                </div>
+                <button id="btn-reset-all" class="btn btn-secondary">
+                    <i class="fa-solid fa-rotate-left"></i> Reset Metrics
+                </button>
+            </div>
+        </header>
+
+        <!-- Banner Info -->
+        <section class="info-banner">
+            <div class="banner-icon">
+                <i class="fa-solid fa-circle-info"></i>
+            </div>
+            <div class="banner-content">
+                <strong>Google Native ADK & OpenTelemetry Integration:</strong> This console registers a custom model to intercept agent requests and simulate a multi-agent system. Telmetry is natively captured using OTel standard <code>gcp.vertex.agent</code> histograms inside the <code>google-adk</code> lifecycle runner. In production, these metrics map directly to <strong>Google Cloud Monitoring</strong> and <strong>Google Cloud Trace</strong>.
+            </div>
+        </section>
+
+        <!-- Dashboard Grid Layout -->
+        <div class="dashboard-grid">
+            <!-- Left Side: Control & Handoff DAG -->
+            <div class="grid-col left-col">
+                <!-- Simulation Trigger Card -->
+                <div class="card glass-card">
+                    <div class="card-header">
+                        <h2><i class="fa-solid fa-play"></i> Simulation Controller</h2>
+                        <span class="card-subtitle">Select and execute conversational scenarios</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="scenario-selector">
+                            <div class="scenario-option active" data-scenario="billing">
+                                <div class="option-icon billing"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+                                <div class="option-info">
+                                    <h3>Billing Refund Request</h3>
+                                    <p>Triage Agent → Billing Specialist → Refund Process</p>
+                                </div>
+                            </div>
+                            <div class="scenario-option" data-scenario="technical">
+                                <div class="option-icon tech"><i class="fa-solid fa-server"></i></div>
+                                <div class="option-info">
+                                    <h3>System Troubleshooting</h3>
+                                    <p>Triage Agent → Tech Specialist → Server Health & Restart</p>
+                                </div>
+                            </div>
+                            <div class="scenario-option" data-scenario="support">
+                                <div class="option-icon support"><i class="fa-solid fa-headset"></i></div>
+                                <div class="option-info">
+                                    <h3>General Portal Support</h3>
+                                    <p>Triage Agent → Support Specialist → Knowledge Base</p>
+                                </div>
+                            </div>
+                        </div>
+                        <button id="btn-run-simulation" class="btn btn-primary btn-block">
+                            <i class="fa-solid fa-bolt"></i> Execute Flow
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Live Agent Handoff Flow Diagram (DAG) -->
+                <div class="card glass-card">
+                    <div class="card-header">
+                        <h2><i class="fa-solid fa-diagram-project"></i> Live Agent Flow</h2>
+                        <span class="card-subtitle">Real-time visualization of agent handoffs and tool execution</span>
+                    </div>
+                    <div class="card-body flow-diagram-container">
+                        <!-- SVG / HTML Flow chart -->
+                        <div class="flow-chart">
+                            <!-- Root Node -->
+                            <div class="flow-node root-node active-trail" id="node-user">
+                                <i class="fa-solid fa-user"></i>
+                                <span>User Query</span>
+                            </div>
+                            
+                            <!-- Arrow downward -->
+                            <div class="flow-link" id="link-user-triage"></div>
+
+                            <!-- Triage Node -->
+                            <div class="flow-node agent-node" id="node-triage_agent">
+                                <span class="node-badge">ROUTER</span>
+                                <i class="fa-solid fa-filter"></i>
+                                <strong>Triage Agent</strong>
+                                <span class="node-status">Idle</span>
+                            </div>
+
+                            <!-- Branching Links -->
+                            <div class="branching-container">
+                                <div class="branch-line" id="link-triage-support"></div>
+                                <div class="branch-line" id="link-triage-billing"></div>
+                                <div class="branch-line" id="link-triage-technical"></div>
+                            </div>
+
+                            <!-- Multi-Agent Row -->
+                            <div class="agents-row">
+                                <div class="flow-node agent-node" id="node-support_agent">
+                                    <span class="node-badge support">SUPPORT</span>
+                                    <i class="fa-solid fa-headset"></i>
+                                    <strong>Support Agent</strong>
+                                    <span class="node-status">Idle</span>
+                                    
+                                    <div class="tool-anchor" id="tool-get_knowledge_base">
+                                        <i class="fa-solid fa-screwdriver-wrench"></i> KB Search
+                                    </div>
+                                </div>
+                                
+                                <div class="flow-node agent-node" id="node-billing_agent">
+                                    <span class="node-badge billing">BILLING</span>
+                                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                                    <strong>Billing Agent</strong>
+                                    <span class="node-status">Idle</span>
+                                    
+                                    <div class="tools-anchor-col">
+                                        <div class="tool-anchor" id="tool-check_billing_status">
+                                            <i class="fa-solid fa-shield"></i> Billing Chk
+                                        </div>
+                                        <div class="tool-anchor" id="tool-process_refund">
+                                            <i class="fa-solid fa-credit-card"></i> Process Refund
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="flow-node agent-node" id="node-technical_agent">
+                                    <span class="node-badge tech">TECHNICAL</span>
+                                    <i class="fa-solid fa-server"></i>
+                                    <strong>Tech Agent</strong>
+                                    <span class="node-status">Idle</span>
+                                    
+                                    <div class="tools-anchor-col">
+                                        <div class="tool-anchor" id="tool-check_server_status">
+                                            <i class="fa-solid fa-gauge"></i> Server Status
+                                        </div>
+                                        <div class="tool-anchor" id="tool-restart_service">
+                                            <i class="fa-solid fa-power-off"></i> Restart Svc
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side: Cloud Trace & Logs -->
+            <div class="grid-col right-col">
+                <div class="card glass-card terminal-card">
+                    <div class="card-header terminal-header">
+                        <div class="terminal-left">
+                            <span class="terminal-dot red"></span>
+                            <span class="terminal-dot yellow"></span>
+                            <span class="terminal-dot green"></span>
+                            <span class="terminal-title"><i class="fa-solid fa-terminal"></i> Google Cloud Trace & Logging Console</span>
+                        </div>
+                        <div class="terminal-right">
+                            <span id="session-badge" class="session-badge">SESSION: NONE</span>
+                        </div>
+                    </div>
+                    <div class="card-body terminal-body" id="log-terminal">
+                        <div class="terminal-line system-line">
+                            <span class="timestamp">[SYSTEM INITIALIZED]</span> OpenTelemetry metrics reader listening on <code>gcp.vertex.agent</code>. Select a scenario and execute to view traces.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metrics Section -->
+        <section class="metrics-section">
+            <div class="section-title">
+                <h2><i class="fa-solid fa-chart-line animate-pulse"></i> OpenTelemetry Metrics Dashboard (40 Active Metrics)</h2>
+                <p>Telemetry fetched directly from InMemoryMetricReader under <code>gcp.vertex.agent</code> OTel standard</p>
+            </div>
+            
+            <div class="metrics-tabs">
+                <button class="tab-btn active" data-tab="tab-agents">Agent Performance (13)</button>
+                <button class="tab-btn" data-tab="tab-tools">Tool Diagnostics (7)</button>
+                <button class="tab-btn" data-tab="tab-system">Session & Workflow (8)</button>
+                <button class="tab-btn" data-tab="tab-model">Model Engine (6)</button>
+                <button class="tab-btn" data-tab="tab-resources">System Resources (6)</button>
+            </div>
+
+            <!-- Tab 1: Agent Performance -->
+            <div class="tab-content active" id="tab-agents">
+                <div class="stats-summary-row">
+                    <div class="stat-badge">
+                        <span class="stat-label">Total Invocations</span>
+                        <strong class="stat-val" id="stat-agent-calls">0</strong>
+                    </div>
+                    <div class="stat-badge">
+                        <span class="stat-label">Total Tokens</span>
+                        <strong class="stat-val" id="stat-agent-tokens">0</strong>
+                    </div>
+                    <div class="stat-badge">
+                        <span class="stat-label">Estimated Cost</span>
+                        <strong class="stat-val" id="stat-agent-cost">$0.00</strong>
+                    </div>
+                    <div class="stat-badge">
+                        <span class="stat-label">Avg Overhead</span>
+                        <strong class="stat-val" id="stat-agent-overhead">0.0 ms</strong>
+                    </div>
+                </div>
+                
+                <div class="metrics-grid">
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Agent Invocation Latency</h3>
+                            <span class="metric-desc">gen_ai.agent.invocation.duration (ms)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-invocation-duration"></canvas>
+                            <div id="no-data-invocation-duration" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Request Payload Size</h3>
+                            <span class="metric-desc">gen_ai.agent.request.size (Bytes)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-request-size"></canvas>
+                            <div id="no-data-request-size" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Response Payload Size</h3>
+                            <span class="metric-desc">gen_ai.agent.response.size (Bytes)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-response-size"></canvas>
+                            <div id="no-data-response-size" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Workflow Execution Steps</h3>
+                            <span class="metric-desc">gen_ai.agent.workflow.steps (count)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-workflow-steps"></canvas>
+                            <div id="no-data-workflow-steps" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Total Invocations</h3>
+                            <span class="metric-desc">gen_ai.agent.calls.count (count)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-agent-calls"></canvas>
+                            <div id="no-data-agent-calls" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Agent Execution Errors</h3>
+                            <span class="metric-desc">gen_ai.agent.errors.count (count)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-agent-errors"></canvas>
+                            <div id="no-data-agent-errors" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Prompt Tokens</h3>
+                            <span class="metric-desc">gen_ai.agent.token.prompt (tokens)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-token-prompt"></canvas>
+                            <div id="no-data-token-prompt" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Completion Tokens</h3>
+                            <span class="metric-desc">gen_ai.agent.token.completion (tokens)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-token-completion"></canvas>
+                            <div id="no-data-token-completion" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Total Tokens</h3>
+                            <span class="metric-desc">gen_ai.agent.token.total (tokens)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-token-total"></canvas>
+                            <div id="no-data-token-total" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Call Cost</h3>
+                            <span class="metric-desc">gen_ai.agent.cost (USD)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-agent-cost"></canvas>
+                            <div id="no-data-agent-cost" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Retry attempts</h3>
+                            <span class="metric-desc">gen_ai.agent.retry.count (count)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-agent-retry"></canvas>
+                            <div id="no-data-agent-retry" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Framework Overhead</h3>
+                            <span class="metric-desc">gen_ai.agent.latency.overhead (ms)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-agent-overhead"></canvas>
+                            <div id="no-data-agent-overhead" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Agent Handoffs</h3>
+                            <span class="metric-desc">gen_ai.agent.handoff.count (count)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-agent-handoffs"></canvas>
+                            <div id="no-data-agent-handoffs" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: Tool Diagnostics -->
+            <div class="tab-content" id="tab-tools">
+                <div class="stats-summary-row">
+                    <div class="stat-badge">
+                        <span class="stat-label">Total Tool Calls</span>
+                        <strong class="stat-val" id="stat-tool-calls">0</strong>
+                    </div>
+                    <div class="stat-badge">
+                        <span class="stat-label">Tool Failures</span>
+                        <strong class="stat-val" id="stat-tool-errors">0</strong>
+                    </div>
+                    <div class="stat-badge">
+                        <span class="stat-label">Cache Hit Rate</span>
+                        <strong class="stat-val" id="stat-tool-hitrate">0.0%</strong>
+                    </div>
+                    <div class="stat-badge">
+                        <span class="stat-label">Max Concurrency</span>
+                        <strong class="stat-val" id="stat-tool-concurrency">0</strong>
+                    </div>
+                </div>
+                
+                <div class="metrics-grid">
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Tool Execution Latency</h3>
+                            <span class="metric-desc">gen_ai.tool.execution.duration (ms)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-tool-duration"></canvas>
+                            <div id="no-data-tool-duration" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Total Tool Calls</h3>
+                            <span class="metric-desc">gen_ai.tool.calls.count (count)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-tool-calls"></canvas>
+                            <div id="no-data-tool-calls" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Tool Failure Count</h3>
+                            <span class="metric-desc">gen_ai.tool.errors.count (count)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-tool-errors"></canvas>
+                            <div id="no-data-tool-errors" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Tool Cache Hits</h3>
+                            <span class="metric-desc">gen_ai.tool.cache.hit (count)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-tool-cache-hit"></canvas>
+                            <div id="no-data-tool-cache-hit" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Tool Cache Misses</h3>
+                            <span class="metric-desc">gen_ai.tool.cache.miss (count)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-tool-cache-miss"></canvas>
+                            <div id="no-data-tool-cache-miss" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Tool Payload Size</h3>
+                            <span class="metric-desc">gen_ai.tool.payload.size (Bytes)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-tool-payload"></canvas>
+                            <div id="no-data-tool-payload" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Tool Concurrency</h3>
+                            <span class="metric-desc">gen_ai.tool.concurrency (count)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-tool-concurrency"></canvas>
+                            <div id="no-data-tool-concurrency" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 3: Session & Workflow -->
+            <div class="tab-content" id="tab-system">
+                <div class="stats-summary-row">
+                    <div class="stat-badge">
+                        <span class="stat-label">Total Workflow Runs</span>
+                        <strong class="stat-val" id="stat-wf-runs">0</strong>
+                    </div>
+                    <div class="stat-badge">
+                        <span class="stat-label">Success Rate</span>
+                        <strong class="stat-val" id="stat-wf-success">100%</strong>
+                    </div>
+                    <div class="stat-badge">
+                        <span class="stat-label">Avg Session Time</span>
+                        <strong class="stat-val" id="stat-wf-time">0.0s</strong>
+                    </div>
+                    <div class="stat-badge">
+                        <span class="stat-label">Avg Session Turns</span>
+                        <strong class="stat-val" id="stat-wf-turns">0.0</strong>
+                    </div>
+                </div>
+                
+                <div class="metrics-grid">
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Total Session Duration</h3>
+                            <span class="metric-desc">gen_ai.workflow.duration (ms)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-workflow-duration"></canvas>
+                            <div id="no-data-workflow-duration" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Concurrently Active Agents</h3>
+                            <span class="metric-desc">gen_ai.workflow.active_agents (count)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-workflow-active"></canvas>
+                            <div id="no-data-workflow-active" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Active Session Memory</h3>
+                            <span class="metric-desc">gen_ai.workflow.memory.usage (chars)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-workflow-memory"></canvas>
+                            <div id="no-data-workflow-memory" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Estimated Active Tokens</h3>
+                            <span class="metric-desc">gen_ai.workflow.tokens.active (tokens)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-workflow-tokens"></canvas>
+                            <div id="no-data-workflow-tokens" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Session Turns Count</h3>
+                            <span class="metric-desc">gen_ai.workflow.turns.count (turns)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-workflow-turns"></canvas>
+                            <div id="no-data-workflow-turns" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Workflow Successes</h3>
+                            <span class="metric-desc">gen_ai.workflow.success.count (count)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-workflow-run-success"></canvas>
+                            <div id="no-data-workflow-run-success" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Workflow Failures</h3>
+                            <span class="metric-desc">gen_ai.workflow.errors.count (count)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-workflow-run-error"></canvas>
+                            <div id="no-data-workflow-run-error" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Event Queue Delay</h3>
+                            <span class="metric-desc">gen_ai.workflow.queue.delay (ms)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-workflow-queue-delay"></canvas>
+                            <div id="no-data-workflow-queue-delay" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 4: Model Engine -->
+            <div class="tab-content" id="tab-model">
+                <div class="stats-summary-row">
+                    <div class="stat-badge">
+                        <span class="stat-label">Avg LLM Latency</span>
+                        <strong class="stat-val" id="stat-model-latency">0.0 ms</strong>
+                    </div>
+                    <div class="stat-badge">
+                        <span class="stat-label">Avg Temp Config</span>
+                        <strong class="stat-val" id="stat-model-temp">0.0</strong>
+                    </div>
+                    <div class="stat-badge">
+                        <span class="stat-label">Streaming Chunks</span>
+                        <strong class="stat-val" id="stat-model-chunks">0</strong>
+                    </div>
+                    <div class="stat-badge">
+                        <span class="stat-label">Model Configs</span>
+                        <strong class="stat-val">3 Parameter</strong>
+                    </div>
+                </div>
+                
+                <div class="metrics-grid">
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Raw LLM Response Latency</h3>
+                            <span class="metric-desc">gen_ai.model.response.latency (ms)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-model-latency"></canvas>
+                            <div id="no-data-model-latency" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Streaming Chunks Yielded</h3>
+                            <span class="metric-desc">gen_ai.model.stream.chunk.count (count)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-model-chunks"></canvas>
+                            <div id="no-data-model-chunks" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Time Between Stream Chunks</h3>
+                            <span class="metric-desc">gen_ai.model.stream.chunk.latency (ms)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-model-chunk-latency"></canvas>
+                            <div id="no-data-model-chunk-latency" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Temperature Setting</h3>
+                            <span class="metric-desc">gen_ai.model.temperature (value)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-model-temp"></canvas>
+                            <div id="no-data-model-temp" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Top P Parameter</h3>
+                            <span class="metric-desc">gen_ai.model.top_p (value)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-model-top-p"></canvas>
+                            <div id="no-data-model-top-p" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Top K Parameter</h3>
+                            <span class="metric-desc">gen_ai.model.top_k (value)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-model-top-k"></canvas>
+                            <div id="no-data-model-top-k" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 5: System Resources -->
+            <div class="tab-content" id="tab-resources">
+                <div class="stats-summary-row">
+                    <div class="stat-badge">
+                        <span class="stat-label">Collector CPU</span>
+                        <strong class="stat-val" id="stat-sys-cpu">0.0%</strong>
+                    </div>
+                    <div class="stat-badge">
+                        <span class="stat-label">Collector Memory</span>
+                        <strong class="stat-val" id="stat-sys-ram">0.0%</strong>
+                    </div>
+                    <div class="stat-badge">
+                        <span class="stat-label">Active Conns</span>
+                        <strong class="stat-val" id="stat-sys-active-conns">0</strong>
+                    </div>
+                    <div class="stat-badge">
+                        <span class="stat-label">Net Throughput</span>
+                        <strong class="stat-val" id="stat-sys-net">0.0 KB</strong>
+                    </div>
+                </div>
+                
+                <div class="metrics-grid">
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>CPU Utilization</h3>
+                            <span class="metric-desc">gen_ai.system.cpu.utilization (%)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-sys-cpu"></canvas>
+                            <div id="no-data-sys-cpu" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Memory (RAM) Utilization</h3>
+                            <span class="metric-desc">gen_ai.system.memory.utilization (%)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-sys-ram"></canvas>
+                            <div id="no-data-sys-ram" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Disk Utilization</h3>
+                            <span class="metric-desc">gen_ai.system.disk.utilization (%)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-sys-disk"></canvas>
+                            <div id="no-data-sys-disk" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Inbound Network traffic</h3>
+                            <span class="metric-desc">gen_ai.system.network.bytes.in (Bytes)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-sys-net-in"></canvas>
+                            <div id="no-data-sys-net-in" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Outbound Network traffic</h3>
+                            <span class="metric-desc">gen_ai.system.network.bytes.out (Bytes)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-sys-net-out"></canvas>
+                            <div id="no-data-sys-net-out" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Active Consumer Connections</h3>
+                            <span class="metric-desc">gen_ai.system.active.connections (count)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-sys-active-conns"></canvas>
+                            <div id="no-data-sys-active-conns" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Production Guide Code Snippet -->
+        <section class="prod-guide card glass-card">
+            <div class="card-header">
+                <h2><i class="fa-solid fa-code"></i> How Google ADK Exports Telemetry in Production</h2>
+                <span class="card-subtitle">Standard setup for Google Cloud Trace & Cloud Monitoring</span>
+            </div>
+            <div class="card-body">
+                <p>The Google Native ADK automatically generates semantic OpenTelemetry traces and metrics internally when wrapping agents and tools. In production, you simply configure the OTel SDK to export to the GCP Operations suite:</p>
+                <pre><code><span class="keyword">from</span> opentelemetry <span class="keyword">import</span> metrics, trace
+<span class="keyword">from</span> opentelemetry.sdk.metrics <span class="keyword">import</span> MeterProvider
+<span class="keyword">from</span> opentelemetry.sdk.trace <span class="keyword">import</span> TracerProvider
+<span class="keyword">from</span> opentelemetry.exporter.otlp.proto.grpc.metric_exporter <span class="keyword">import</span> OTLPMetricExporter
+<span class="keyword">from</span> opentelemetry.exporter.otlp.proto.grpc.trace_exporter <span class="keyword">import</span> OTLPTraceExporter
+<span class="keyword">from</span> opentelemetry.sdk.metrics.export <span class="keyword">import</span> PeriodicExportingMetricReader
+<span class="keyword">from</span> opentelemetry.sdk.trace.export <span class="keyword">import</span> BatchSpanProcessor
+
+<span class="comment"># Initialize Trace and Metric Providers</span>
+trace.set_tracer_provider(TracerProvider())
+metrics.set_meter_provider(MeterProvider(
+    metric_readers=[PeriodicExportingMetricReader(OTLPMetricExporter(endpoint=<span class="string">"gcp-otel-collector:4317"</span>))]
+))
+trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(OTLPTraceExporter(endpoint=<span class="string">"gcp-otel-collector:4317"</span>)))
+
+<span class="comment"># The Google ADK will now automatically push agent and tool spans/histograms to Cloud Logging, Trace and Monitoring!</span></code></pre>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>&copy; 2026 Google Cloud Platform. Demonstration of ADK Observability Architecture.</p>
+        </footer>
+    </div>
+
+    <!-- Main Javascript -->
+    <script src="/static/app.js"></script>
+</body>
+</html>
