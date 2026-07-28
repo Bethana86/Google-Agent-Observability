@@ -7,6 +7,20 @@
     --text-secondary: #9ca3af;
     --text-muted: #6b7280;
     
+    /* Observability specific components */
+    --bg-terminal: #06080d;
+    --border-terminal: rgba(255, 255, 255, 0.02);
+    --header-terminal: rgba(10, 14, 20, 0.8);
+    --text-terminal: #f3f4f6;
+    
+    --bg-flow-container: rgba(0, 0, 0, 0.15);
+    --bg-flow-node: rgba(30, 41, 59, 0.6);
+    --bg-scenario-option: rgba(255, 255, 255, 0.02);
+    --bg-scenario-hover: rgba(255, 255, 255, 0.04);
+    --bg-scenario-active: rgba(66, 133, 244, 0.05);
+    --border-scenario-active: rgba(66, 133, 244, 0.3);
+    --option-icon-bg: rgba(255, 255, 255, 0.05);
+    
     /* GCloud Brand Colors */
     --google-blue: #4285f4;
     --google-red: #ea4335;
@@ -22,6 +36,29 @@
     
     --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     --font-mono: 'JetBrains Mono', "SFMono-Regular", Consolas, monospace;
+}
+
+/* Light Theme Variables overrides */
+body.light-theme {
+    --bg-main: #f3f4f6;
+    --bg-card: rgba(255, 255, 255, 0.85);
+    --border-color: rgba(0, 0, 0, 0.08);
+    --text-primary: #1f2937;
+    --text-secondary: #4b5563;
+    --text-muted: #9ca3af;
+    
+    --bg-terminal: #0f172a;
+    --border-terminal: rgba(255, 255, 255, 0.05);
+    --header-terminal: #070a12;
+    --text-terminal: #f8fafc;
+    
+    --bg-flow-container: #ffffff;
+    --bg-flow-node: #e2e8f0;
+    --bg-scenario-option: #ffffff;
+    --bg-scenario-hover: #f1f5f9;
+    --bg-scenario-active: rgba(66, 133, 244, 0.08);
+    --border-scenario-active: rgba(66, 133, 244, 0.4);
+    --option-icon-bg: #f1f5f9;
 }
 
 * {
@@ -327,7 +364,7 @@ body {
     align-items: center;
     gap: 1rem;
     padding: 0.9rem;
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--bg-scenario-option);
     border: 1px solid var(--border-color);
     border-radius: 12px;
     cursor: pointer;
@@ -335,15 +372,15 @@ body {
 }
 
 .scenario-option:hover {
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--bg-scenario-hover);
     border-color: rgba(255, 255, 255, 0.15);
     transform: translateX(4px);
 }
 
 .scenario-option.active {
-    background: rgba(66, 133, 244, 0.05);
-    border-color: rgba(66, 133, 244, 0.3);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    background: var(--bg-scenario-active);
+    border-color: var(--border-scenario-active);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
 }
 
 .option-icon {
@@ -354,7 +391,7 @@ body {
     align-items: center;
     justify-content: center;
     font-size: 1.1rem;
-    background: rgba(255,255,255,0.05);
+    background: var(--option-icon-bg);
 }
 
 .option-icon.billing { color: var(--color-billing); background: rgba(168, 85, 247, 0.1); }
@@ -378,9 +415,9 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 380px;
-    background: rgba(0, 0, 0, 0.15);
+    background: var(--bg-flow-container);
     border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-color);
 }
 
 .flow-chart {
@@ -392,7 +429,7 @@ body {
 }
 
 .flow-node {
-    background: rgba(30, 41, 59, 0.6);
+    background: var(--bg-flow-node);
     border: 1.5px solid var(--border-color);
     border-radius: 12px;
     padding: 0.75rem 1rem;
@@ -560,7 +597,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: rgba(10, 14, 20, 0.8);
+    background: var(--header-terminal);
     padding: 0.8rem 1.2rem;
 }
 
@@ -594,7 +631,8 @@ body {
 }
 
 .terminal-body {
-    background: #06080d;
+    background: var(--bg-terminal);
+    color: var(--text-terminal);
     font-family: var(--font-mono);
     font-size: 0.82rem;
     line-height: 1.6;
@@ -610,7 +648,7 @@ body {
 .terminal-line {
     margin-bottom: 0.8rem;
     padding-bottom: 0.4rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+    border-bottom: 1px solid var(--border-terminal);
     word-break: break-all;
     animation: fadeIn 0.3s ease;
 }

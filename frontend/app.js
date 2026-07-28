@@ -6,6 +6,9 @@ let charts = {};
 // UI Elements
 const btnRunSimulation = document.getElementById('btn-run-simulation');
 const btnResetAll = document.getElementById('btn-reset-all');
+const btnThemeToggle = document.getElementById('btn-theme-toggle');
+const themeIcon = document.getElementById('theme-icon');
+const themeText = document.getElementById('theme-text');
 const scenarioOptions = document.querySelectorAll('.scenario-option');
 const logTerminal = document.getElementById('log-terminal');
 const sessionBadge = document.getElementById('session-badge');
@@ -13,6 +16,30 @@ const sessionBadge = document.getElementById('session-badge');
 // Tab switcher elements
 const tabButtons = document.querySelectorAll('.tab-btn');
 const tabContents = document.querySelectorAll('.tab-content');
+
+// Theme Switcher Initialization
+if (localStorage.getItem('theme') === 'light') {
+    document.body.classList.add('light-theme');
+    if (themeIcon) themeIcon.className = 'fa-solid fa-moon';
+    if (themeText) themeText.textContent = 'Dark Mode';
+}
+
+if (btnThemeToggle) {
+    btnThemeToggle.addEventListener('click', () => {
+        const isLight = document.body.classList.toggle('light-theme');
+        localStorage.setItem('theme', isLight ? 'light' : 'dark');
+        
+        if (themeIcon) {
+            themeIcon.className = isLight ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+        }
+        if (themeText) {
+            themeText.textContent = isLight ? 'Dark Mode' : 'Light Mode';
+        }
+        
+        // Redraw active charts with new theme colors
+        fetchMetrics();
+    });
+}
 
 // Nodes for DAG Flow
 const nodes = {
@@ -682,8 +709,20 @@ function renderCharts(metricsData) {
     document.getElementById('stat-sys-net').textContent = totalNetThroughputKB.toFixed(1) + ' KB';
 }
 
+// Theme colors helper for Chart.js
+function getThemeColors() {
+    const isLight = document.body.classList.contains('light-theme');
+    return {
+        gridColor: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.05)',
+        tickColor: isLight ? '#4b5563' : '#9ca3af',
+        doughnutBorder: isLight ? '#ffffff' : 'rgba(255,255,255,0.05)',
+        chartTextColor: isLight ? '#4b5563' : '#9ca3af'
+    };
+}
+
 // Chart.js helper configurations
 function createBarChartConfig(labels, data, label, color, horizontal = false) {
+    const colors = getThemeColors();
     const config = {
         type: 'bar',
         data: {
@@ -692,7 +731,7 @@ function createBarChartConfig(labels, data, label, color, horizontal = false) {
                 label: label,
                 data: data,
                 backgroundColor: color,
-                borderColor: 'rgba(255,255,255,0.15)',
+                borderColor: colors.doughnutBorder,
                 borderWidth: 1,
                 borderRadius: 6
             }]
@@ -702,20 +741,21 @@ function createBarChartConfig(labels, data, label, color, horizontal = false) {
             maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: {
-                y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' } },
-                x: { grid: { display: false }, ticks: { color: '#9ca3af' } }
+                y: { grid: { color: colors.gridColor }, ticks: { color: colors.tickColor } },
+                x: { grid: { display: false }, ticks: { color: colors.tickColor } }
             }
         }
     };
     if (horizontal) {
         config.options.indexAxis = 'y';
-        config.options.scales.x = { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' } };
-        config.options.scales.y = { grid: { display: false }, ticks: { color: '#9ca3af', font: { size: 9 } } };
+        config.options.scales.x = { grid: { color: colors.gridColor }, ticks: { color: colors.tickColor } };
+        config.options.scales.y = { grid: { display: false }, ticks: { color: colors.tickColor, font: { size: 9 } } };
     }
     return config;
 }
 
 function createLineChartConfig(labels, data, label, color) {
+    const colors = getThemeColors();
     return {
         type: 'line',
         data: {
@@ -737,22 +777,23 @@ function createLineChartConfig(labels, data, label, color) {
             maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: {
-                y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' } },
-                x: { grid: { display: false }, ticks: { color: '#9ca3af' } }
+                y: { grid: { color: colors.gridColor }, ticks: { color: colors.tickColor } },
+                x: { grid: { display: false }, ticks: { color: colors.tickColor } }
             }
         }
     };
 }
 
-function createDoughnutConfig(labels, data, colors) {
+function createDoughnutConfig(labels, data, colorsList) {
+    const colors = getThemeColors();
     return {
         type: 'doughnut',
         data: {
             labels: labels,
             datasets: [{
                 data: data,
-                backgroundColor: colors,
-                borderColor: 'rgba(255,255,255,0.05)',
+                backgroundColor: colorsList,
+                borderColor: colors.doughnutBorder,
                 borderWidth: 1
             }]
         },
@@ -762,7 +803,7 @@ function createDoughnutConfig(labels, data, colors) {
             plugins: {
                 legend: {
                     position: 'right',
-                    labels: { color: '#9ca3af', boxWidth: 10, font: { size: 9 } }
+                    labels: { color: colors.tickColor, boxWidth: 10, font: { size: 9 } }
                 }
             },
             cutout: '70%'
@@ -776,8 +817,10 @@ function updateChart(canvasId, config) {
         charts[canvasId].destroy();
     }
     
+    const colors = getThemeColors();
+    
     // Apply common styling overrides
-    Chart.defaults.color = '#9ca3af';
+    Chart.defaults.color = colors.chartTextColor;
     Chart.defaults.font.family = 'Outfit';
     
     const canvas = document.getElementById(canvasId);
