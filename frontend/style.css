@@ -49,14 +49,13 @@
     --font-mono: 'JetBrains Mono', "SFMono-Regular", Consolas, monospace;
 }
 
-/* Light Theme Variables overrides */
 body.light-theme {
     --bg-main: #f3f4f6;
     --bg-card: #ffffff;
     --border-color: rgba(0, 0, 0, 0.08);
     --text-primary: #1f2937;
     --text-secondary: #4b5563;
-    --text-muted: #9ca3af;
+    --text-muted: #6b7280;
     
     --bg-terminal: #0f172a;
     --border-terminal: rgba(255, 255, 255, 0.05);
@@ -81,6 +80,12 @@ body.light-theme {
     --bg-stat-badge: #f8fafc;
     --bg-stat-hover: #f1f5f9;
     --text-shadow-stat: none;
+}
+
+body.light-theme .kpi-card {
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+    border-color: rgba(0, 0, 0, 0.06);
 }
 
 * {
