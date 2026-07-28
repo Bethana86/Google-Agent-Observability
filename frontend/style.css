@@ -15,11 +15,22 @@
     
     --bg-flow-container: rgba(0, 0, 0, 0.15);
     --bg-flow-node: rgba(30, 41, 59, 0.6);
+    --bg-flow-node-active: rgba(30, 41, 59, 0.95);
+    --shadow-flow-node-active: rgba(255, 255, 255, 0.15);
+    
     --bg-scenario-option: rgba(255, 255, 255, 0.02);
     --bg-scenario-hover: rgba(255, 255, 255, 0.04);
     --bg-scenario-active: rgba(66, 133, 244, 0.05);
     --border-scenario-active: rgba(66, 133, 244, 0.3);
     --option-icon-bg: rgba(255, 255, 255, 0.05);
+    
+    --bg-btn-secondary: rgba(255, 255, 255, 0.05);
+    --bg-btn-secondary-hover: rgba(255, 255, 255, 0.1);
+    --bg-status-indicator: rgba(255, 255, 255, 0.04);
+    
+    --bg-stat-badge: rgba(255, 255, 255, 0.02);
+    --bg-stat-hover: rgba(255, 255, 255, 0.04);
+    --text-shadow-stat: 0 0 10px rgba(255, 255, 255, 0.15);
     
     /* GCloud Brand Colors */
     --google-blue: #4285f4;
@@ -41,7 +52,7 @@
 /* Light Theme Variables overrides */
 body.light-theme {
     --bg-main: #f3f4f6;
-    --bg-card: rgba(255, 255, 255, 0.85);
+    --bg-card: #ffffff;
     --border-color: rgba(0, 0, 0, 0.08);
     --text-primary: #1f2937;
     --text-secondary: #4b5563;
@@ -52,13 +63,24 @@ body.light-theme {
     --header-terminal: #070a12;
     --text-terminal: #f8fafc;
     
-    --bg-flow-container: #ffffff;
+    --bg-flow-container: #f8fafc;
     --bg-flow-node: #e2e8f0;
-    --bg-scenario-option: #ffffff;
+    --bg-flow-node-active: #ffffff;
+    --shadow-flow-node-active: rgba(0, 0, 0, 0.08);
+    
+    --bg-scenario-option: #f8fafc;
     --bg-scenario-hover: #f1f5f9;
     --bg-scenario-active: rgba(66, 133, 244, 0.08);
     --border-scenario-active: rgba(66, 133, 244, 0.4);
-    --option-icon-bg: #f1f5f9;
+    --option-icon-bg: #e2e8f0;
+    
+    --bg-btn-secondary: #f1f5f9;
+    --bg-btn-secondary-hover: #cbd5e1;
+    --bg-status-indicator: #e2e8f0;
+    
+    --bg-stat-badge: #f8fafc;
+    --bg-stat-hover: #f1f5f9;
+    --text-shadow-stat: none;
 }
 
 * {
@@ -195,7 +217,7 @@ body {
     display: flex;
     align-items: center;
     gap: 0.6rem;
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--bg-status-indicator);
     padding: 0.5rem 0.9rem;
     border-radius: 30px;
     border: 1px solid var(--border-color);
@@ -248,13 +270,13 @@ body {
 }
 
 .btn-secondary {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--bg-btn-secondary);
     color: var(--text-primary);
     border: 1px solid var(--border-color);
 }
 
 .btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--bg-btn-secondary-hover);
     transform: translateY(-1px);
 }
 
@@ -545,8 +567,8 @@ body {
 /* Node Glowing States during simulation */
 .flow-node.active-node {
     transform: scale(1.05);
-    box-shadow: 0 0 20px rgba(255, 255, 255, 0.15);
-    background: rgba(30, 41, 59, 0.95);
+    box-shadow: 0 0 20px var(--shadow-flow-node-active);
+    background: var(--bg-flow-node-active);
     border-color: var(--text-primary);
 }
 
@@ -812,8 +834,8 @@ body {
 }
 
 .tab-btn:hover {
-    color: #fff;
-    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-primary);
+    background: var(--bg-stat-hover);
 }
 
 .tab-btn.active {
@@ -841,7 +863,7 @@ body {
 .stat-badge {
     flex: 1;
     min-width: 180px;
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--bg-stat-badge);
     border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 1.1rem 1.4rem;
@@ -853,7 +875,7 @@ body {
 }
 
 .stat-badge:hover {
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--bg-stat-hover);
     border-color: rgba(66, 133, 244, 0.35);
     box-shadow: 0 4px 20px rgba(66, 133, 244, 0.15);
     transform: translateY(-3px);
@@ -871,8 +893,8 @@ body {
     font-family: 'Outfit', sans-serif;
     font-size: 1.6rem;
     font-weight: 700;
-    color: #fff;
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.15);
+    color: var(--text-primary);
+    text-shadow: var(--text-shadow-stat);
 }
 
 /* Footer */
