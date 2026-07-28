@@ -140,7 +140,14 @@ const allMetricSignals = {
     'chart-sys-disk': 'status-sig-sys-disk',
     'chart-sys-net-in': 'status-sig-sys-net-in',
     'chart-sys-net-out': 'status-sig-sys-net-out',
-    'chart-sys-active-conns': 'status-sig-sys-active-conns'
+    'chart-sys-active-conns': 'status-sig-sys-active-conns',
+    // TAB 6: Policy & Governance (6)
+    'chart-policy-ca-blocked': 'status-sig-policy-ca-blocked',
+    'chart-policy-ca-violations': 'status-sig-policy-ca-violations',
+    'chart-policy-ma-injection': 'status-sig-policy-ma-injection',
+    'chart-policy-ma-jailbreak': 'status-sig-policy-ma-jailbreak',
+    'chart-policy-ma-pii': 'status-sig-policy-ma-pii',
+    'chart-policy-ma-safety': 'status-sig-policy-ma-safety'
 };
 
 // Realistic Warning Health Threshold evaluation functions
@@ -203,7 +210,15 @@ const metricThresholds = {
     'chart-sys-disk': (data) => (data[data.length-1] || 0) < 90.0,
     'chart-sys-net-in': (data) => true,
     'chart-sys-net-out': (data) => true,
-    'chart-sys-active-conns': (data) => (data[data.length-1] || 0) < 200
+    'chart-sys-active-conns': (data) => (data[data.length-1] || 0) < 200,
+    
+    // TAB 6: POLICY & GOVERNANCE (6)
+    'chart-policy-ca-blocked': (data) => data.reduce((a,b)=>a+b,0) <= 2,
+    'chart-policy-ca-violations': (data) => data.reduce((a,b)=>a+b,0) === 0,
+    'chart-policy-ma-injection': (data) => data.reduce((a,b)=>a+b,0) === 0,
+    'chart-policy-ma-jailbreak': (data) => data.reduce((a,b)=>a+b,0) === 0,
+    'chart-policy-ma-pii': (data) => data.reduce((a,b)=>a+b,0) === 0,
+    'chart-policy-ma-safety': (data) => data.reduce((a,b)=>a+b,0) === 0
 };
 
 btnRunSimulation.addEventListener('click', runSimulation);
@@ -449,7 +464,9 @@ function showChartNoData(show) {
         'no-data-model-latency', 'no-data-model-chunks', 'no-data-model-chunk-latency', 'no-data-model-temp',
         'no-data-model-top-p', 'no-data-model-top-k',
         'no-data-sys-cpu', 'no-data-sys-ram', 'no-data-sys-disk', 'no-data-sys-net-in',
-        'no-data-sys-net-out', 'no-data-sys-active-conns'
+        'no-data-sys-net-out', 'no-data-sys-active-conns',
+        'no-data-policy-ca-blocked', 'no-data-policy-ca-violations', 'no-data-policy-ma-injection',
+        'no-data-policy-ma-jailbreak', 'no-data-policy-ma-pii', 'no-data-policy-ma-safety'
     ];
     overlays.forEach(id => {
         const el = document.getElementById(id);
@@ -847,7 +864,49 @@ function renderCharts(metricsData) {
     document.getElementById('stat-sys-active-conns').textContent = currentActiveConnections;
     document.getElementById('stat-sys-net').textContent = totalNetThroughputKB.toFixed(1) + ' KB';
 
-    // Update metric signals for ALL 50 metrics dynamically
+    // ----------------------------------------------------
+    // TAB 6: POLICY & GOVERNANCE (6 Charts & Badges)
+    // ----------------------------------------------------
+    const caBlockedData = metricsData['gen_ai.security.cloud_armor.blocked'] || [];
+    const caBlocked = caBlockedData.map(pt => pt.value);
+    const caBlockedLabels = caBlocked.map((_, i) => `Tick #${i+1}`);
+    updateChart('chart-policy-ca-blocked', createLineChartConfig(caBlockedLabels, caBlocked, 'Blocked Requests', triageColor));
+
+    const caViolationsData = metricsData['gen_ai.security.cloud_armor.violations'] || [];
+    const caViolations = caViolationsData.map(pt => pt.value);
+    const caViolationsLabels = caViolations.map((_, i) => `Tick #${i+1}`);
+    updateChart('chart-policy-ca-violations', createLineChartConfig(caViolationsLabels, caViolations, 'Violations', techColor));
+
+    const maInjectionData = metricsData['gen_ai.security.model_armor.prompt_injection'] || [];
+    const maInjections = maInjectionData.map(pt => pt.value);
+    const maInjectionLabels = maInjections.map((_, i) => `Tick #${i+1}`);
+    updateChart('chart-policy-ma-injection', createLineChartConfig(maInjectionLabels, maInjections, 'Injection Blocks', billingColor));
+
+    const maJailbreakData = metricsData['gen_ai.security.model_armor.jailbreak'] || [];
+    const maJailbreaks = maJailbreakData.map(pt => pt.value);
+    const maJailbreakLabels = maJailbreaks.map((_, i) => `Tick #${i+1}`);
+    updateChart('chart-policy-ma-jailbreak', createLineChartConfig(maJailbreakLabels, maJailbreaks, 'Jailbreak Blocks', triageColor));
+
+    const maPiiData = metricsData['gen_ai.security.model_armor.pii_leak'] || [];
+    const maPiiLeaks = maPiiData.map(pt => pt.value);
+    const maPiiLabels = maPiiLeaks.map((_, i) => `Tick #${i+1}`);
+    updateChart('chart-policy-ma-pii', createLineChartConfig(maPiiLabels, maPiiLeaks, 'PII Blocks', supportColor));
+
+    const maSafetyData = metricsData['gen_ai.security.model_armor.safety_triggers'] || [];
+    const maSafeties = maSafetyData.map(pt => pt.value);
+    const maSafetyLabels = maSafeties.map((_, i) => `Tick #${i+1}`);
+    updateChart('chart-policy-ma-safety', createLineChartConfig(maSafetyLabels, maSafeties, 'Safety Blocks', techColor));
+
+    // Update Tab 6 Summary Stats
+    const sumCaBlocks = caBlocked.reduce((a, b) => a + b, 0);
+    const sumMaBlocks = maInjections.reduce((a, b) => a + b, 0) + maJailbreaks.reduce((a, b) => a + b, 0) + maPiiLeaks.reduce((a, b) => a + b, 0) + maSafeties.reduce((a, b) => a + b, 0);
+    const sumViolations = caViolations.reduce((a, b) => a + b, 0);
+
+    document.getElementById('stat-policy-ca-blocks').textContent = sumCaBlocks;
+    document.getElementById('stat-policy-ma-blocks').textContent = sumMaBlocks;
+    document.getElementById('stat-policy-violations').textContent = sumViolations;
+
+    // Update metric signals for ALL 56 metrics dynamically
     const metricsMapping = {
         'chart-invocation-duration': agentDurations,
         'chart-request-size': reqSizes,
@@ -902,7 +961,14 @@ function renderCharts(metricsData) {
         'chart-sys-disk': [diskVal],
         'chart-sys-net-in': netInBytes,
         'chart-sys-net-out': netOutBytes,
-        'chart-sys-active-conns': conns
+        'chart-sys-active-conns': conns,
+
+        'chart-policy-ca-blocked': caBlocked,
+        'chart-policy-ca-violations': caViolations,
+        'chart-policy-ma-injection': maInjections,
+        'chart-policy-ma-jailbreak': maJailbreaks,
+        'chart-policy-ma-pii': maPiiLeaks,
+        'chart-policy-ma-safety': maSafeties
     };
 
     Object.keys(metricsMapping).forEach(canvasId => {

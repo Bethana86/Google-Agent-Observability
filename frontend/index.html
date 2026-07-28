@@ -214,6 +214,7 @@
                 <button class="tab-btn" data-tab="tab-system">Session & Workflow (10)</button>
                 <button class="tab-btn" data-tab="tab-model">Model Engine (6)</button>
                 <button class="tab-btn" data-tab="tab-resources">System Resources (6)</button>
+                <button class="tab-btn" data-tab="tab-policy">Policy & Governance (6)</button>
             </div>
 
             <!-- Tab 1: Agent Performance -->
@@ -836,6 +837,91 @@
                         <div class="card-body chart-container">
                             <canvas id="chart-sys-active-conns"></canvas>
                             <div id="no-data-sys-active-conns" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 6: Policy & Governance -->
+            <div class="tab-content" id="tab-policy">
+                <div class="stats-summary-row">
+                    <div class="stat-badge">
+                        <span class="stat-label">Cloud Armor Blocks</span>
+                        <strong class="stat-val" id="stat-policy-ca-blocks">0</strong>
+                    </div>
+                    <div class="stat-badge">
+                        <span class="stat-label">Model Armor Blocks</span>
+                        <strong class="stat-val" id="stat-policy-ma-blocks">0</strong>
+                    </div>
+                    <div class="stat-badge">
+                        <span class="stat-label">Security Violations</span>
+                        <strong class="stat-val" id="stat-policy-violations">0</strong>
+                    </div>
+                    <div class="stat-badge">
+                        <span class="stat-label">Governance State</span>
+                        <strong class="stat-val" style="color: var(--color-support); text-shadow: none;">COMPLIANT</strong>
+                    </div>
+                </div>
+                
+                <div class="metrics-grid">
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Cloud Armor Blocked Requests</h3>
+                            <span class="metric-desc">gen_ai.security.cloud_armor.blocked (count)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-policy-ca-blocked"></canvas>
+                            <div id="no-data-policy-ca-blocked" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Cloud Armor Violations</h3>
+                            <span class="metric-desc">gen_ai.security.cloud_armor.violations (count)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-policy-ca-violations"></canvas>
+                            <div id="no-data-policy-ca-violations" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Model Armor Prompt Injections</h3>
+                            <span class="metric-desc">gen_ai.security.model_armor.prompt_injection (count)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-policy-ma-injection"></canvas>
+                            <div id="no-data-policy-ma-injection" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Model Armor Jailbreak Attempts</h3>
+                            <span class="metric-desc">gen_ai.security.model_armor.jailbreak (count)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-policy-ma-jailbreak"></canvas>
+                            <div id="no-data-policy-ma-jailbreak" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Model Armor PII Leak Blocks</h3>
+                            <span class="metric-desc">gen_ai.security.model_armor.pii_leak (count)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-policy-ma-pii"></canvas>
+                            <div id="no-data-policy-ma-pii" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Model Armor Safety Triggers</h3>
+                            <span class="metric-desc">gen_ai.security.model_armor.safety_triggers (count)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-policy-ma-safety"></canvas>
+                            <div id="no-data-policy-ma-safety" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
                         </div>
                     </div>
                 </div>

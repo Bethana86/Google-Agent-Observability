@@ -83,6 +83,14 @@ sys_net_in = meter.create_counter("gen_ai.system.network.bytes.in", description=
 sys_net_out = meter.create_counter("gen_ai.system.network.bytes.out", description="Outbound network traffic in bytes")
 sys_active_conns = meter.create_up_down_counter("gen_ai.system.active.connections", description="Active consumer connections")
 
+# Policy & Governance (6 total: 6 custom)
+cloud_armor_blocked = meter.create_counter("gen_ai.security.cloud_armor.blocked", description="Requests blocked by Cloud Armor policies")
+cloud_armor_violations = meter.create_counter("gen_ai.security.cloud_armor.violations", description="SQL injection or XSS violations flagged")
+model_armor_prompt_injection = meter.create_counter("gen_ai.security.model_armor.prompt_injection", description="Prompt injection attempts blocked by Model Armor")
+model_armor_jailbreak = meter.create_counter("gen_ai.security.model_armor.jailbreak", description="Jailbreak attempts flagged by Model Armor")
+model_armor_pii_leak = meter.create_counter("gen_ai.security.model_armor.pii_leak", description="PII leaks blocked by Model Armor filters")
+model_armor_safety = meter.create_counter("gen_ai.security.model_armor.safety_triggers", description="Toxicity, hate speech or harassment blocks")
+
 from fastapi import FastAPI, Request
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -612,6 +620,14 @@ async def simulate(scenario: str = "general"):
         # System resources resource release
         sys_net_out.add(random.randint(5000, 10000), {"node": "collector-us-central"})
         sys_active_conns.add(-1, {"node": "collector-us-central"})
+        
+        # Policy & Governance Telemetry Simulation
+        cloud_armor_blocked.add(random.choice([0, 0, 0, 1]), {"policy": "default-security-policy"})
+        cloud_armor_violations.add(random.choice([0, 0, 0, 0, 1]) if scenario == "technical" else 0, {"policy": "default-security-policy"})
+        model_armor_prompt_injection.add(random.choice([0, 0, 0, 1]) if scenario == "technical" else 0, {"model": "gemini-1.5-pro"})
+        model_armor_jailbreak.add(0, {"model": "gemini-1.5-pro"})
+        model_armor_pii_leak.add(random.choice([0, 0, 1, 0]) if scenario == "billing" else 0, {"model": "gemini-1.5-pro"})
+        model_armor_safety.add(0, {"model": "gemini-1.5-pro"})
             
         yield f"data: {json.dumps({'type': 'complete'})}\n\n"
 
