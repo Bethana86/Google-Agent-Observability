@@ -905,3 +905,35 @@ body {
     color: var(--text-muted);
     border-top: 1px solid var(--border-color);
 }
+
+/* Metric Status Signal Dots */
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.status-signal-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-top: 0.3rem;
+    transition: all 0.3s ease;
+    background: var(--text-muted);
+}
+
+.status-signal-dot.green {
+    background: var(--color-support);
+    box-shadow: 0 0 10px var(--color-support);
+}
+
+.status-signal-dot.red {
+    background: var(--google-red);
+    box-shadow: 0 0 10px var(--google-red);
+}
+
+.status-signal-dot.grey {
+    background: var(--text-muted);
+    box-shadow: none;
+}

@@ -84,11 +84,52 @@ tabButtons.forEach(btn => {
     });
 });
 
+// Agent metrics canvas to signal ID mapping
+const agentMetricSignals = {
+    'chart-invocation-duration': 'status-sig-invocation-duration',
+    'chart-request-size': 'status-sig-request-size',
+    'chart-response-size': 'status-sig-response-size',
+    'chart-workflow-steps': 'status-sig-workflow-steps',
+    'chart-agent-calls': 'status-sig-agent-calls',
+    'chart-agent-errors': 'status-sig-agent-errors',
+    'chart-token-prompt': 'status-sig-token-prompt',
+    'chart-token-completion': 'status-sig-token-completion',
+    'chart-token-total': 'status-sig-token-total',
+    'chart-agent-cost': 'status-sig-agent-cost',
+    'chart-agent-retry': 'status-sig-agent-retry',
+    'chart-agent-overhead': 'status-sig-agent-overhead',
+    'chart-agent-handoffs': 'status-sig-agent-handoffs',
+    'chart-agent-reasoning-drift': 'status-sig-agent-reasoning-drift',
+    'chart-agent-rca-depth': 'status-sig-agent-rca-depth',
+    'chart-agent-rca-confidence': 'status-sig-agent-rca-confidence',
+    'chart-agent-mem-reads': 'status-sig-agent-mem-reads',
+    'chart-agent-mem-writes': 'status-sig-agent-mem-writes',
+    'chart-agent-feedback': 'status-sig-agent-feedback',
+    'chart-agent-fallback': 'status-sig-agent-fallback'
+};
+
 btnRunSimulation.addEventListener('click', runSimulation);
 btnResetAll.addEventListener('click', resetMetrics);
 
 // Load metrics on startup
 document.addEventListener('DOMContentLoaded', () => {
+    // Dynamically insert signal dots in card headers for Agent tab
+    Object.keys(agentMetricSignals).forEach(canvasId => {
+        const canvas = document.getElementById(canvasId);
+        if (canvas) {
+            const card = canvas.closest('.card');
+            if (card) {
+                const header = card.querySelector('.card-header');
+                if (header) {
+                    const dot = document.createElement('span');
+                    dot.className = 'status-signal-dot grey';
+                    dot.id = agentMetricSignals[canvasId];
+                    header.appendChild(dot);
+                }
+            }
+        }
+    });
+    
     fetchMetrics();
 });
 
@@ -475,6 +516,67 @@ function renderCharts(metricsData) {
         return pt ? pt.value : 0;
     });
     updateChart('chart-agent-fallback', createBarChartConfig(agentDisplayLabels, fallbacks, 'Fallback Triggers', billingColor));
+
+    // Update metric signals for Agent Performance
+    const avgLatency = agentDurations.reduce((a, b) => a + b, 0) / (agentDurations.filter(v => v > 0).length || 1);
+    updateMetricSignal('status-sig-invocation-duration', avgLatency < 4000);
+
+    const avgReqSize = reqSizes.reduce((a, b) => a + b, 0) / (reqSizes.filter(v => v > 0).length || 1);
+    updateMetricSignal('status-sig-request-size', avgReqSize < 500);
+
+    const avgRespSize = respSizes.reduce((a, b) => a + b, 0) / (respSizes.filter(v => v > 0).length || 1);
+    updateMetricSignal('status-sig-response-size', avgRespSize < 1000);
+
+    const avgSteps = steps.reduce((a, b) => a + b, 0) / (steps.filter(v => v > 0).length || 1);
+    updateMetricSignal('status-sig-workflow-steps', avgSteps < 6);
+
+    const totalCalls = agentCalls.reduce((a, b) => a + b, 0);
+    updateMetricSignal('status-sig-agent-calls', totalCalls <= 12);
+
+    const totalErrors = agentErrors.reduce((a, b) => a + b, 0);
+    updateMetricSignal('status-sig-agent-errors', totalErrors === 0);
+
+    const avgPrompt = promptTokens.reduce((a, b) => a + b, 0) / (promptTokens.filter(v => v > 0).length || 1);
+    updateMetricSignal('status-sig-token-prompt', avgPrompt < 1000);
+
+    const avgComp = compTokens.reduce((a, b) => a + b, 0) / (compTokens.filter(v => v > 0).length || 1);
+    updateMetricSignal('status-sig-token-completion', avgComp < 500);
+
+    const avgTotal = totalTokens.reduce((a, b) => a + b, 0) / (totalTokens.filter(v => v > 0).length || 1);
+    updateMetricSignal('status-sig-token-total', avgTotal < 1500);
+
+    const totalCost = costs.reduce((a, b) => a + b, 0);
+    updateMetricSignal('status-sig-agent-cost', totalCost < 0.05);
+
+    const totalRetries = retries.reduce((a, b) => a + b, 0);
+    updateMetricSignal('status-sig-agent-retry', totalRetries === 0);
+
+    const avgOverhead = overheads.reduce((a, b) => a + b, 0) / (overheads.filter(v => v > 0).length || 1);
+    updateMetricSignal('status-sig-agent-overhead', avgOverhead < 5.0);
+
+    const totalHandoffs = handoffs.reduce((a, b) => a + b, 0);
+    updateMetricSignal('status-sig-agent-handoffs', totalHandoffs < 3);
+
+    const avgDrift = drifts.reduce((a, b) => a + b, 0) / (drifts.filter(v => v > 0).length || 1);
+    updateMetricSignal('status-sig-agent-reasoning-drift', avgDrift < 0.15);
+
+    const avgRcaDepth = rcaDepths.reduce((a, b) => a + b, 0) / (rcaDepths.filter(v => v > 0).length || 1);
+    updateMetricSignal('status-sig-agent-rca-depth', avgRcaDepth <= 4.0);
+
+    const avgRcaConf = rcaConfidences.reduce((a, b) => a + b, 0) / (rcaConfidences.filter(v => v > 0).length || 1);
+    updateMetricSignal('status-sig-agent-rca-confidence', avgRcaConf >= 85.0);
+
+    const avgMemReads = memReads.reduce((a, b) => a + b, 0) / (memReads.filter(v => v > 0).length || 1);
+    updateMetricSignal('status-sig-agent-mem-reads', avgMemReads <= 5.0);
+
+    const avgMemWrites = memWrites.reduce((a, b) => a + b, 0) / (memWrites.filter(v => v > 0).length || 1);
+    updateMetricSignal('status-sig-agent-mem-writes', avgMemWrites <= 2.0);
+
+    const totalFeedback = feedbacks.reduce((a, b) => a + b, 0);
+    updateMetricSignal('status-sig-agent-feedback', totalFeedback === 0);
+
+    const totalFallbacks = fallbacks.reduce((a, b) => a + b, 0);
+    updateMetricSignal('status-sig-agent-fallback', totalFallbacks === 0);
 
     // Update Tab 1 Summary Stats
     const totalCallsCount = agentCalls.reduce((a, b) => a + b, 0);
@@ -868,9 +970,22 @@ async function resetMetrics() {
                         el.textContent = '0';
                     }
                 });
+                
+                // Reset all status signal dots to grey
+                document.querySelectorAll('.status-signal-dot').forEach(el => {
+                    el.className = 'status-signal-dot grey';
+                });
             }
         } catch (e) {
             console.error("Failed to reset metrics", e);
         }
+    }
+}
+
+// Update status signal dot helper
+function updateMetricSignal(id, isHealthy) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.className = isHealthy ? 'status-signal-dot green' : 'status-signal-dot red';
     }
 }
