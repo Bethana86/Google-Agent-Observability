@@ -84,8 +84,9 @@ tabButtons.forEach(btn => {
     });
 });
 
-// Agent metrics canvas to signal ID mapping
-const agentMetricSignals = {
+// All 50 metrics canvas to signal ID mapping
+const allMetricSignals = {
+    // TAB 1: Agent Performance (20)
     'chart-invocation-duration': 'status-sig-invocation-duration',
     'chart-request-size': 'status-sig-request-size',
     'chart-response-size': 'status-sig-response-size',
@@ -105,7 +106,104 @@ const agentMetricSignals = {
     'chart-agent-mem-reads': 'status-sig-agent-mem-reads',
     'chart-agent-mem-writes': 'status-sig-agent-mem-writes',
     'chart-agent-feedback': 'status-sig-agent-feedback',
-    'chart-agent-fallback': 'status-sig-agent-fallback'
+    'chart-agent-fallback': 'status-sig-agent-fallback',
+    // TAB 2: Tool Diagnostics (8)
+    'chart-tool-duration': 'status-sig-tool-duration',
+    'chart-tool-calls': 'status-sig-tool-calls',
+    'chart-tool-errors': 'status-sig-tool-errors',
+    'chart-tool-cache-hit': 'status-sig-tool-cache-hit',
+    'chart-tool-cache-miss': 'status-sig-tool-cache-miss',
+    'chart-tool-payload': 'status-sig-tool-payload',
+    'chart-tool-concurrency': 'status-sig-tool-concurrency',
+    'chart-tool-timeout': 'status-sig-tool-timeout',
+    // TAB 3: Session & Workflow (10)
+    'chart-workflow-duration': 'status-sig-workflow-duration',
+    'chart-workflow-active': 'status-sig-workflow-active',
+    'chart-workflow-memory': 'status-sig-workflow-memory',
+    'chart-workflow-tokens': 'status-sig-workflow-tokens',
+    'chart-workflow-turns': 'status-sig-workflow-turns',
+    'chart-workflow-run-success': 'status-sig-workflow-run-success',
+    'chart-workflow-run-error': 'status-sig-workflow-run-error',
+    'chart-workflow-queue-delay': 'status-sig-workflow-queue-delay',
+    'chart-workflow-handoff-depth': 'status-sig-workflow-handoff-depth',
+    'chart-workflow-concurrency-limit': 'status-sig-workflow-concurrency-limit',
+    // TAB 4: Model Engine (6)
+    'chart-model-latency': 'status-sig-model-latency',
+    'chart-model-chunks': 'status-sig-model-chunks',
+    'chart-model-chunk-latency': 'status-sig-model-chunk-latency',
+    'chart-model-temp': 'status-sig-model-temp',
+    'chart-model-top-p': 'status-sig-model-top-p',
+    'chart-model-top-k': 'status-sig-model-top-k',
+    // TAB 5: System Resources (6)
+    'chart-sys-cpu': 'status-sig-sys-cpu',
+    'chart-sys-ram': 'status-sig-sys-ram',
+    'chart-sys-disk': 'status-sig-sys-disk',
+    'chart-sys-net-in': 'status-sig-sys-net-in',
+    'chart-sys-net-out': 'status-sig-sys-net-out',
+    'chart-sys-active-conns': 'status-sig-sys-active-conns'
+};
+
+// Realistic Warning Health Threshold evaluation functions
+const metricThresholds = {
+    // TAB 1: AGENT PERFORMANCE (20)
+    'chart-invocation-duration': (data) => (data.reduce((a,b)=>a+b,0)/(data.filter(v=>v>0).length||1)) < 5000,
+    'chart-request-size': (data) => (data.reduce((a,b)=>a+b,0)/(data.filter(v=>v>0).length||1)) < 2000,
+    'chart-response-size': (data) => (data.reduce((a,b)=>a+b,0)/(data.filter(v=>v>0).length||1)) < 4000,
+    'chart-workflow-steps': (data) => (data.reduce((a,b)=>a+b,0)/(data.filter(v=>v>0).length||1)) < 12,
+    'chart-agent-calls': (data) => data.reduce((a,b)=>a+b,0) <= 25,
+    'chart-agent-errors': (data) => data.reduce((a,b)=>a+b,0) === 0,
+    'chart-token-prompt': (data) => (data.reduce((a,b)=>a+b,0)/(data.filter(v=>v>0).length||1)) < 4000,
+    'chart-token-completion': (data) => (data.reduce((a,b)=>a+b,0)/(data.filter(v=>v>0).length||1)) < 2000,
+    'chart-token-total': (data) => (data.reduce((a,b)=>a+b,0)/(data.filter(v=>v>0).length||1)) < 6000,
+    'chart-agent-cost': (data) => data.reduce((a,b)=>a+b,0) < 0.15,
+    'chart-agent-retry': (data) => data.reduce((a,b)=>a+b,0) <= 1,
+    'chart-agent-overhead': (data) => (data.reduce((a,b)=>a+b,0)/(data.filter(v=>v>0).length||1)) < 15.0,
+    'chart-agent-handoffs': (data) => data.reduce((a,b)=>a+b,0) < 6,
+    'chart-agent-reasoning-drift': (data) => (data.reduce((a,b)=>a+b,0)/(data.filter(v=>v>0).length||1)) < 0.35,
+    'chart-agent-rca-depth': (data) => (data.reduce((a,b)=>a+b,0)/(data.filter(v=>v>0).length||1)) <= 6.0,
+    'chart-agent-rca-confidence': (data) => (data.reduce((a,b)=>a+b,0)/(data.filter(v=>v>0).length||1)) >= 75.0,
+    'chart-agent-mem-reads': (data) => (data.reduce((a,b)=>a+b,0)/(data.filter(v=>v>0).length||1)) <= 10.0,
+    'chart-agent-mem-writes': (data) => (data.reduce((a,b)=>a+b,0)/(data.filter(v=>v>0).length||1)) <= 5.0,
+    'chart-agent-feedback': (data) => data.reduce((a,b)=>a+b,0) <= 2,
+    'chart-agent-fallback': (data) => data.reduce((a,b)=>a+b,0) <= 1,
+
+    // TAB 2: TOOL DIAGNOSTICS (8)
+    'chart-tool-duration': (data) => (data.reduce((a,b)=>a+b,0)/(data.filter(v=>v>0).length||1)) < 3000,
+    'chart-tool-calls': (data) => data.reduce((a,b)=>a+b,0) <= 25,
+    'chart-tool-errors': (data) => data.reduce((a,b)=>a+b,0) === 0,
+    'chart-tool-cache-hit': (data) => true,
+    'chart-tool-cache-miss': (data) => true,
+    'chart-tool-payload': (data) => (data.reduce((a,b)=>a+b,0)/(data.filter(v=>v>0).length||1)) < 3000,
+    'chart-tool-concurrency': (data) => (data.reduce((a,b)=>a+b,0)/(data.filter(v=>v>0).length||1)) <= 3.0,
+    'chart-tool-timeout': (data) => data.reduce((a,b)=>a+b,0) === 0,
+
+    // TAB 3: SESSION & WORKFLOW (10)
+    'chart-workflow-duration': (data) => (data.reduce((a,b)=>a+b,0)/(data.filter(v=>v>0).length||1)) < 15000,
+    'chart-workflow-active': (data) => true,
+    'chart-workflow-memory': (data) => (data.reduce((a,b)=>a+b,0)/(data.filter(v=>v>0).length||1)) < 250000,
+    'chart-workflow-tokens': (data) => (data.reduce((a,b)=>a+b,0)/(data.filter(v=>v>0).length||1)) < 10000,
+    'chart-workflow-turns': (data) => (data.reduce((a,b)=>a+b,0)/(data.filter(v=>v>0).length||1)) < 15,
+    'chart-workflow-run-success': (data) => true,
+    'chart-workflow-run-error': (data) => data.reduce((a,b)=>a+b,0) === 0,
+    'chart-workflow-queue-delay': (data) => (data.reduce((a,b)=>a+b,0)/(data.filter(v=>v>0).length||1)) < 50.0,
+    'chart-workflow-handoff-depth': (data) => (data.reduce((a,b)=>a+b,0)/(data.filter(v=>v>0).length||1)) <= 4.0,
+    'chart-workflow-concurrency-limit': (data) => true,
+
+    // TAB 4: MODEL ENGINE (6)
+    'chart-model-latency': (data) => (data.reduce((a,b)=>a+b,0)/(data.filter(v=>v>0).length||1)) < 3000,
+    'chart-model-chunks': (data) => true,
+    'chart-model-chunk-latency': (data) => (data.reduce((a,b)=>a+b,0)/(data.filter(v=>v>0).length||1)) < 100,
+    'chart-model-temp': (data) => true,
+    'chart-model-top-p': (data) => true,
+    'chart-model-top-k': (data) => true,
+
+    // TAB 5: SYSTEM RESOURCES (6)
+    'chart-sys-cpu': (data) => (data[data.length-1] || 0) < 80.0,
+    'chart-sys-ram': (data) => (data[data.length-1] || 0) < 85.0,
+    'chart-sys-disk': (data) => (data[data.length-1] || 0) < 90.0,
+    'chart-sys-net-in': (data) => true,
+    'chart-sys-net-out': (data) => true,
+    'chart-sys-active-conns': (data) => (data[data.length-1] || 0) < 200
 };
 
 btnRunSimulation.addEventListener('click', runSimulation);
@@ -113,8 +211,8 @@ btnResetAll.addEventListener('click', resetMetrics);
 
 // Load metrics on startup
 document.addEventListener('DOMContentLoaded', () => {
-    // Dynamically insert signal dots in card headers for Agent tab
-    Object.keys(agentMetricSignals).forEach(canvasId => {
+    // Dynamically insert signal dots in card headers for ALL tabs
+    Object.keys(allMetricSignals).forEach(canvasId => {
         const canvas = document.getElementById(canvasId);
         if (canvas) {
             const card = canvas.closest('.card');
@@ -123,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (header) {
                     const dot = document.createElement('span');
                     dot.className = 'status-signal-dot grey';
-                    dot.id = agentMetricSignals[canvasId];
+                    dot.id = allMetricSignals[canvasId];
                     header.appendChild(dot);
                 }
             }
@@ -517,67 +615,6 @@ function renderCharts(metricsData) {
     });
     updateChart('chart-agent-fallback', createBarChartConfig(agentDisplayLabels, fallbacks, 'Fallback Triggers', billingColor));
 
-    // Update metric signals for Agent Performance
-    const avgLatency = agentDurations.reduce((a, b) => a + b, 0) / (agentDurations.filter(v => v > 0).length || 1);
-    updateMetricSignal('status-sig-invocation-duration', avgLatency < 4000);
-
-    const avgReqSize = reqSizes.reduce((a, b) => a + b, 0) / (reqSizes.filter(v => v > 0).length || 1);
-    updateMetricSignal('status-sig-request-size', avgReqSize < 500);
-
-    const avgRespSize = respSizes.reduce((a, b) => a + b, 0) / (respSizes.filter(v => v > 0).length || 1);
-    updateMetricSignal('status-sig-response-size', avgRespSize < 1000);
-
-    const avgSteps = steps.reduce((a, b) => a + b, 0) / (steps.filter(v => v > 0).length || 1);
-    updateMetricSignal('status-sig-workflow-steps', avgSteps < 12);
-
-    const totalCalls = agentCalls.reduce((a, b) => a + b, 0);
-    updateMetricSignal('status-sig-agent-calls', totalCalls <= 20);
-
-    const totalErrors = agentErrors.reduce((a, b) => a + b, 0);
-    updateMetricSignal('status-sig-agent-errors', totalErrors === 0);
-
-    const avgPrompt = promptTokens.reduce((a, b) => a + b, 0) / (promptTokens.filter(v => v > 0).length || 1);
-    updateMetricSignal('status-sig-token-prompt', avgPrompt < 1000);
-
-    const avgComp = compTokens.reduce((a, b) => a + b, 0) / (compTokens.filter(v => v > 0).length || 1);
-    updateMetricSignal('status-sig-token-completion', avgComp < 500);
-
-    const avgTotal = totalTokens.reduce((a, b) => a + b, 0) / (totalTokens.filter(v => v > 0).length || 1);
-    updateMetricSignal('status-sig-token-total', avgTotal < 1500);
-
-    const totalCost = costs.reduce((a, b) => a + b, 0);
-    updateMetricSignal('status-sig-agent-cost', totalCost < 0.05);
-
-    const totalRetries = retries.reduce((a, b) => a + b, 0);
-    updateMetricSignal('status-sig-agent-retry', totalRetries === 0);
-
-    const avgOverhead = overheads.reduce((a, b) => a + b, 0) / (overheads.filter(v => v > 0).length || 1);
-    updateMetricSignal('status-sig-agent-overhead', avgOverhead < 5.0);
-
-    const totalHandoffs = handoffs.reduce((a, b) => a + b, 0);
-    updateMetricSignal('status-sig-agent-handoffs', totalHandoffs < 3);
-
-    const avgDrift = drifts.reduce((a, b) => a + b, 0) / (drifts.filter(v => v > 0).length || 1);
-    updateMetricSignal('status-sig-agent-reasoning-drift', avgDrift < 0.15);
-
-    const avgRcaDepth = rcaDepths.reduce((a, b) => a + b, 0) / (rcaDepths.filter(v => v > 0).length || 1);
-    updateMetricSignal('status-sig-agent-rca-depth', avgRcaDepth <= 4.0);
-
-    const avgRcaConf = rcaConfidences.reduce((a, b) => a + b, 0) / (rcaConfidences.filter(v => v > 0).length || 1);
-    updateMetricSignal('status-sig-agent-rca-confidence', avgRcaConf >= 85.0);
-
-    const avgMemReads = memReads.reduce((a, b) => a + b, 0) / (memReads.filter(v => v > 0).length || 1);
-    updateMetricSignal('status-sig-agent-mem-reads', avgMemReads <= 5.0);
-
-    const avgMemWrites = memWrites.reduce((a, b) => a + b, 0) / (memWrites.filter(v => v > 0).length || 1);
-    updateMetricSignal('status-sig-agent-mem-writes', avgMemWrites <= 2.0);
-
-    const totalFeedback = feedbacks.reduce((a, b) => a + b, 0);
-    updateMetricSignal('status-sig-agent-feedback', totalFeedback === 0);
-
-    const totalFallbacks = fallbacks.reduce((a, b) => a + b, 0);
-    updateMetricSignal('status-sig-agent-fallback', totalFallbacks === 0);
-
     // Update Tab 1 Summary Stats
     const totalCallsCount = agentCalls.reduce((a, b) => a + b, 0);
     const totalTokensCount = totalTokens.reduce((a, b) => a + b, 0);
@@ -809,6 +846,73 @@ function renderCharts(metricsData) {
     document.getElementById('stat-sys-ram').textContent = ramVal.toFixed(1) + '%';
     document.getElementById('stat-sys-active-conns').textContent = currentActiveConnections;
     document.getElementById('stat-sys-net').textContent = totalNetThroughputKB.toFixed(1) + ' KB';
+
+    // Update metric signals for ALL 50 metrics dynamically
+    const metricsMapping = {
+        'chart-invocation-duration': agentDurations,
+        'chart-request-size': reqSizes,
+        'chart-response-size': respSizes,
+        'chart-workflow-steps': steps,
+        'chart-agent-calls': agentCalls,
+        'chart-agent-errors': agentErrors,
+        'chart-token-prompt': promptTokens,
+        'chart-token-completion': compTokens,
+        'chart-token-total': totalTokens,
+        'chart-agent-cost': costs,
+        'chart-agent-retry': retries,
+        'chart-agent-overhead': overheads,
+        'chart-agent-handoffs': handoffs,
+        'chart-agent-reasoning-drift': drifts,
+        'chart-agent-rca-depth': rcaDepths,
+        'chart-agent-rca-confidence': rcaConfidences,
+        'chart-agent-mem-reads': memReads,
+        'chart-agent-mem-writes': memWrites,
+        'chart-agent-feedback': feedbacks,
+        'chart-agent-fallback': fallbacks,
+
+        'chart-tool-duration': toolDurations,
+        'chart-tool-calls': toolCalls,
+        'chart-tool-errors': toolErrors,
+        'chart-tool-cache-hit': toolCacheHits,
+        'chart-tool-cache-miss': toolCacheMisses,
+        'chart-tool-payload': toolPayloads,
+        'chart-tool-concurrency': toolConcurrencies,
+        'chart-tool-timeout': toolTimeouts,
+
+        'chart-workflow-duration': wfDurations,
+        'chart-workflow-active': activeCounts,
+        'chart-workflow-memory': wfMemSizes,
+        'chart-workflow-tokens': wfTokenCounts,
+        'chart-workflow-turns': wfTurnsCounts,
+        'chart-workflow-run-success': wfSuccessCounts,
+        'chart-workflow-run-error': wfErrorCounts,
+        'chart-workflow-queue-delay': wfDelayCounts,
+        'chart-workflow-handoff-depth': wfHandoffDepths,
+        'chart-workflow-concurrency-limit': wfConcurrencyLimits,
+
+        'chart-model-latency': modelLatencies,
+        'chart-model-chunks': modelChunksCount,
+        'chart-model-chunk-latency': modelChunkLatencies,
+        'chart-model-temp': modelTemps,
+        'chart-model-top-p': modelTopPs,
+        'chart-model-top-k': modelTopKs,
+
+        'chart-sys-cpu': [cpuVal],
+        'chart-sys-ram': [ramVal],
+        'chart-sys-disk': [diskVal],
+        'chart-sys-net-in': netInBytes,
+        'chart-sys-net-out': netOutBytes,
+        'chart-sys-active-conns': conns
+    };
+
+    Object.keys(metricsMapping).forEach(canvasId => {
+        const signalId = allMetricSignals[canvasId];
+        const thresholdFn = metricThresholds[canvasId];
+        const valData = metricsMapping[canvasId];
+        if (signalId && thresholdFn && valData) {
+            updateMetricSignal(signalId, thresholdFn(valData));
+        }
+    });
 }
 
 // Theme colors helper for Chart.js
