@@ -937,3 +937,230 @@ body {
     background: var(--text-muted);
     box-shadow: none;
 }
+
+/* SLOs & Business KPIs Section */
+.slo-kpi-alerts-section {
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+    width: 100%;
+}
+
+.kpi-alerts-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1.25rem;
+}
+
+@media (max-width: 1024px) {
+    .kpi-alerts-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.kpi-panel {
+    display: flex;
+    flex-direction: column;
+}
+
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+@media (max-width: 640px) {
+    .kpi-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.kpi-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1rem;
+    display: flex;
+    gap: 0.8rem;
+    align-items: flex-start;
+    transition: all 0.3s ease;
+}
+
+.kpi-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(66, 133, 244, 0.3);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.kpi-icon {
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 0.2rem;
+}
+
+.kpi-details {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.kpi-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.kpi-value-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+.kpi-value {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.kpi-target {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+}
+
+.progress-bar-bg {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 0.2rem;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    width: 0%;
+    transition: width 0.6s ease, background-color 0.3s ease;
+}
+
+.progress-bar-fill.green {
+    background: var(--color-support);
+}
+
+.progress-bar-fill.red {
+    background: var(--google-red);
+}
+
+/* Alerts Panel & Feed */
+.alerts-panel {
+    display: flex;
+    flex-direction: column;
+}
+
+.alert-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.alert-status-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.alert-status-badge.green {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--color-support);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.alert-status-badge.red {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--google-red);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+.alerts-feed {
+    flex-grow: 1;
+    overflow-y: auto;
+    max-height: 200px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding-right: 0.3rem;
+}
+
+.alerts-feed::-webkit-scrollbar {
+    width: 4px;
+}
+
+.alerts-feed::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+}
+
+.alert-item.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 0.5rem;
+    padding: 2rem 1rem;
+    color: var(--text-muted);
+}
+
+.alert-item.empty-state i {
+    font-size: 2rem;
+    color: var(--color-support);
+    opacity: 0.8;
+}
+
+.alert-item.empty-state p {
+    font-size: 0.78rem;
+    line-height: 1.35;
+}
+
+.alert-record {
+    background: rgba(239, 68, 68, 0.05);
+    border: 1px solid rgba(239, 68, 68, 0.15);
+    border-left: 4px solid var(--google-red);
+    border-radius: 6px;
+    padding: 0.6rem;
+    font-family: 'Consolas', monospace;
+    font-size: 0.72rem;
+    color: var(--text-primary);
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    animation: fadeInSlide 0.3s ease;
+}
+
+.alert-record .alert-header {
+    display: flex;
+    justify-content: space-between;
+    font-weight: bold;
+    color: var(--google-red);
+}
+
+.alert-record .alert-time {
+    color: var(--text-muted);
+}
+
+@keyframes fadeInSlide {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}

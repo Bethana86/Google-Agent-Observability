@@ -971,14 +971,152 @@ function renderCharts(metricsData) {
         'chart-policy-ma-safety': maSafeties
     };
 
+    // Evaluate and construct Active Alerts dynamically
+    const activeAlerts = [];
+    const nowStr = new Date().toTimeString().split(' ')[0];
+    
     Object.keys(metricsMapping).forEach(canvasId => {
         const signalId = allMetricSignals[canvasId];
         const thresholdFn = metricThresholds[canvasId];
         const valData = metricsMapping[canvasId];
+        
         if (signalId && thresholdFn && valData) {
-            updateMetricSignal(signalId, thresholdFn(valData));
+            const isCompliant = thresholdFn(valData);
+            updateMetricSignal(signalId, isCompliant);
+            
+            // If not compliant, and we have recorded values for this metric, raise alert!
+            const hasData = valData.length > 0 && valData.some(v => v !== 0);
+            if (!isCompliant && hasData) {
+                // Find the friendly name of this card
+                const canvas = document.getElementById(canvasId);
+                let friendlyName = canvasId;
+                if (canvas) {
+                    const card = canvas.closest('.card');
+                    if (card) {
+                        const h3 = card.querySelector('h3');
+                        if (h3) friendlyName = h3.textContent;
+                    }
+                }
+                
+                // Get the last value
+                const lastVal = valData[valData.length - 1];
+                activeAlerts.push({
+                    name: friendlyName,
+                    metricId: canvasId.replace('chart-', 'gen_ai.'),
+                    val: lastVal,
+                    time: nowStr
+                });
+            }
         }
     });
+
+    // Update Alerts Panel feed UI
+    const alertsContainer = document.getElementById('alerts-feed-container');
+    const statusBadge = document.getElementById('global-alert-status');
+    
+    if (activeAlerts.length === 0) {
+        statusBadge.textContent = 'All SLOs Compliant';
+        statusBadge.className = 'alert-status-badge green';
+        alertsContainer.innerHTML = `
+            <div class="alert-item empty-state">
+                <i class="fa-solid fa-shield-halved"></i>
+                <p>No active incidents or alert notifications generated. All platform thresholds are inside SLA limits.</p>
+            </div>
+        `;
+    } else {
+        statusBadge.textContent = `${activeAlerts.length} Active Alert${activeAlerts.length > 1 ? 's' : ''}`;
+        statusBadge.className = 'alert-status-badge red';
+        alertsContainer.innerHTML = '';
+        
+        activeAlerts.forEach(alert => {
+            const div = document.createElement('div');
+            div.className = 'alert-record';
+            div.innerHTML = `
+                <div class="alert-header">
+                    <span>🚨 CRITICAL LIMIT EXCEEDED</span>
+                    <span class="alert-time">${alert.time}</span>
+                </div>
+                <div><strong>Metric:</strong> ${alert.name}</div>
+                <div><strong>Current Metric Value:</strong> ${typeof alert.val === 'number' ? alert.val.toFixed(2) : alert.val} (SLA Threshold Breached)</div>
+            `;
+            alertsContainer.appendChild(div);
+        });
+    }
+
+    // ----------------------------------------------------
+    // Platform Service Level Objectives (SLOs) & Business KPIs Calculations
+    // ----------------------------------------------------
+    // 1. Success Rate SLO (based on workflow_success vs workflow_errors)
+    const successCount = wfSuccessCounts.reduce((a, b) => a + b, 0);
+    const failureCount = wfErrorCounts.reduce((a, b) => a + b, 0);
+    const totalWfRuns = successCount + failureCount;
+    let successRate = 100.0;
+    if (totalWfRuns > 0) {
+        successRate = (successCount / totalWfRuns) * 100;
+    }
+    const successEl = document.getElementById('kpi-success-rate');
+    const successFill = document.getElementById('kpi-success-fill');
+    successEl.textContent = successRate.toFixed(1) + '%';
+    
+    if (successRate >= 99.5) {
+        successFill.className = 'progress-bar-fill green';
+        successEl.style.color = 'var(--color-support)';
+    } else {
+        successFill.className = 'progress-bar-fill red';
+        successEl.style.color = 'var(--google-red)';
+    }
+    successFill.style.width = `${successRate}%`;
+
+    // 2. Average Latency SLO (based on Agent Performance Invocations)
+    const activeDurations = agentDurations.filter(d => d > 0);
+    const avgLatency = activeDurations.length > 0 ? (activeDurations.reduce((a,b)=>a+b,0) / activeDurations.length) : 0;
+    const latencyEl = document.getElementById('kpi-latency-val');
+    const latencyFill = document.getElementById('kpi-latency-fill');
+    latencyEl.textContent = avgLatency.toFixed(0) + ' ms';
+    
+    const latencyPct = Math.min((avgLatency / 5000) * 100, 100);
+    latencyFill.style.width = `${latencyPct}%`;
+    if (avgLatency < 5000) {
+        latencyFill.className = 'progress-bar-fill green';
+        latencyEl.style.color = 'var(--text-primary)';
+    } else {
+        latencyFill.className = 'progress-bar-fill red';
+        latencyEl.style.color = 'var(--google-red)';
+    }
+
+    // 3. Running API Cost KPI
+    const totalCost = costs.reduce((a, b) => a + b, 0);
+    const costEl = document.getElementById('kpi-cost-val');
+    const costFill = document.getElementById('kpi-cost-fill');
+    costEl.textContent = '$' + totalCost.toFixed(4);
+    const costPct = Math.min((totalCost / 5.0) * 100, 100);
+    costFill.style.width = `${costPct}%`;
+    if (totalCost < 5.0) {
+        costFill.className = 'progress-bar-fill green';
+        costEl.style.color = 'var(--text-primary)';
+    } else {
+        costFill.className = 'progress-bar-fill red';
+        costEl.style.color = 'var(--google-red)';
+    }
+
+    // 4. CSAT Score KPI (based on failures and retries impacting satisfaction)
+    let csatScore = 5.0;
+    if (totalWfRuns > 0) {
+        const totalRetries = retries.reduce((a,b)=>a+b,0);
+        csatScore = Math.max(1.0, 5.0 - (failureCount * 0.8) - (totalRetries * 0.2));
+    }
+    const csatEl = document.getElementById('kpi-csat-val');
+    const csatFill = document.getElementById('kpi-csat-fill');
+    csatEl.textContent = csatScore.toFixed(1) + ' / 5.0';
+    const csatPct = (csatScore / 5.0) * 100;
+    csatFill.style.width = `${csatPct}%`;
+    if (csatScore >= 4.5) {
+        csatFill.className = 'progress-bar-fill green';
+        csatEl.style.color = 'var(--color-support)';
+    } else {
+        csatFill.className = 'progress-bar-fill red';
+        csatEl.style.color = 'var(--google-red)';
+    }
 }
 
 // Theme colors helper for Chart.js

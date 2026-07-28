@@ -201,6 +201,79 @@
             </div>
         </div>
 
+        <!-- SLOs, Business KPIs & Active Alerts Section -->
+        <section class="slo-kpi-alerts-section">
+            <div class="kpi-alerts-grid">
+                <!-- Left: SLO & KPI Panel -->
+                <div class="card glass-card kpi-panel">
+                    <div class="card-header">
+                        <h2><i class="fa-solid fa-gauge-high"></i> Service Level Objectives (SLOs) & Business KPIs</h2>
+                        <span class="card-subtitle">Real-time tracking of platform service levels, cost budgets, and compliance</span>
+                    </div>
+                    <div class="card-body kpi-grid">
+                        <div class="kpi-card">
+                            <div class="kpi-icon"><i class="fa-solid fa-square-check" style="color: var(--color-support);"></i></div>
+                            <div class="kpi-details">
+                                <span class="kpi-label">Workflow Success Rate (SLO)</span>
+                                <div class="kpi-value-row">
+                                    <strong class="kpi-value" id="kpi-success-rate">100.0%</strong>
+                                    <span class="kpi-target">Target: &ge;99.5%</span>
+                                </div>
+                                <div class="progress-bar-bg"><div class="progress-bar-fill green" id="kpi-success-fill" style="width: 100%;"></div></div>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-icon"><i class="fa-solid fa-clock-rotate-left" style="color: var(--color-triage);"></i></div>
+                            <div class="kpi-details">
+                                <span class="kpi-label">Avg Invocation Latency (SLO)</span>
+                                <div class="kpi-value-row">
+                                    <strong class="kpi-value" id="kpi-latency-val">0 ms</strong>
+                                    <span class="kpi-target">Target: &lt;5.0s</span>
+                                </div>
+                                <div class="progress-bar-bg"><div class="progress-bar-fill green" id="kpi-latency-fill" style="width: 100%;"></div></div>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-icon"><i class="fa-solid fa-circle-dollar-to-slot" style="color: var(--color-billing);"></i></div>
+                            <div class="kpi-details">
+                                <span class="kpi-label">Running Token Budget (KPI)</span>
+                                <div class="kpi-value-row">
+                                    <strong class="kpi-value" id="kpi-cost-val">$0.00</strong>
+                                    <span class="kpi-target">Budget: &lt;$5.00</span>
+                                </div>
+                                <div class="progress-bar-bg"><div class="progress-bar-fill green" id="kpi-cost-fill" style="width: 0%;"></div></div>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-icon"><i class="fa-solid fa-face-laugh-beam" style="color: var(--color-tech);"></i></div>
+                            <div class="kpi-details">
+                                <span class="kpi-label">User CSAT Score (KPI)</span>
+                                <div class="kpi-value-row">
+                                    <strong class="kpi-value" id="kpi-csat-val">5.0 / 5.0</strong>
+                                    <span class="kpi-target">Target: &ge;4.5</span>
+                                </div>
+                                <div class="progress-bar-bg"><div class="progress-bar-fill green" id="kpi-csat-fill" style="width: 100%;"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Active Alerts & Incident Feed -->
+                <div class="card glass-card alerts-panel">
+                    <div class="card-header alert-panel-header">
+                        <h2><i class="fa-solid fa-bell animate-pulse" style="color: var(--color-triage);"></i> Active Platform Alerts</h2>
+                        <span class="alert-status-badge green" id="global-alert-status">All SLOs Compliant</span>
+                    </div>
+                    <div class="card-body alerts-feed" id="alerts-feed-container">
+                        <div class="alert-item empty-state">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            <p>No active incidents or alert notifications generated. All platform thresholds are inside SLA limits.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- Metrics Section -->
         <section class="metrics-section">
             <div class="section-title">
