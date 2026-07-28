@@ -22,7 +22,7 @@ A premium, interactive multi-agent observability dashboard demonstrating native 
 ### ⚙️ Installation
 1. Navigate to the project directory:
    ```bash
-   cd C:\Users\ASUA\.gemini\antigravity\scratch\multi-agent-observability
+   cd path/to/multi-agent-observability
    ```
 2. Install dependencies:
    ```bash
