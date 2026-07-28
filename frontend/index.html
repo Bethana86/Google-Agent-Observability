@@ -1001,32 +1001,6 @@
             </div>
         </section>
 
-        <!-- Production Guide Code Snippet -->
-        <section class="prod-guide card glass-card">
-            <div class="card-header">
-                <h2><i class="fa-solid fa-code"></i> How Google ADK Exports Telemetry in Production</h2>
-                <span class="card-subtitle">Standard setup for Google Cloud Trace & Cloud Monitoring</span>
-            </div>
-            <div class="card-body">
-                <p>The Google Native ADK automatically generates semantic OpenTelemetry traces and metrics internally when wrapping agents and tools. In production, you simply configure the OTel SDK to export to the GCP Operations suite:</p>
-                <pre><code><span class="keyword">from</span> opentelemetry <span class="keyword">import</span> metrics, trace
-<span class="keyword">from</span> opentelemetry.sdk.metrics <span class="keyword">import</span> MeterProvider
-<span class="keyword">from</span> opentelemetry.sdk.trace <span class="keyword">import</span> TracerProvider
-<span class="keyword">from</span> opentelemetry.exporter.otlp.proto.grpc.metric_exporter <span class="keyword">import</span> OTLPMetricExporter
-<span class="keyword">from</span> opentelemetry.exporter.otlp.proto.grpc.trace_exporter <span class="keyword">import</span> OTLPTraceExporter
-<span class="keyword">from</span> opentelemetry.sdk.metrics.export <span class="keyword">import</span> PeriodicExportingMetricReader
-<span class="keyword">from</span> opentelemetry.sdk.trace.export <span class="keyword">import</span> BatchSpanProcessor
-
-<span class="comment"># Initialize Trace and Metric Providers</span>
-trace.set_tracer_provider(TracerProvider())
-metrics.set_meter_provider(MeterProvider(
-    metric_readers=[PeriodicExportingMetricReader(OTLPMetricExporter(endpoint=<span class="string">"gcp-otel-collector:4317"</span>))]
-))
-trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(OTLPTraceExporter(endpoint=<span class="string">"gcp-otel-collector:4317"</span>)))
-
-<span class="comment"># The Google ADK will now automatically push agent and tool spans/histograms to Cloud Logging, Trace and Monitoring!</span></code></pre>
-            </div>
-        </section>
 
         <!-- Footer -->
         <footer class="app-footer">
