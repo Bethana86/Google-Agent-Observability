@@ -221,8 +221,8 @@ const metricThresholds = {
     'chart-policy-ma-safety': (data) => data.reduce((a,b)=>a+b,0) === 0
 };
 
-btnRunSimulation.addEventListener('click', runSimulation);
-btnResetAll.addEventListener('click', resetMetrics);
+if (btnRunSimulation) btnRunSimulation.addEventListener('click', runSimulation);
+if (btnResetAll) btnResetAll.addEventListener('click', resetMetrics);
 
 // Load metrics on startup
 document.addEventListener('DOMContentLoaded', () => {
@@ -312,7 +312,7 @@ function handleAgentEvent(event) {
     const author = event.author;
     const type = event.type;
     
-    Object.values(nodes).forEach(n => n.classList.remove('active-node'));
+    Object.values(nodes).forEach(n => { if (n) n.classList.remove('active-node'); });
     
     if (author === 'triage_agent') {
         nodes.triage.classList.add('active-node');
@@ -368,11 +368,12 @@ function setStatus(node, statusText) {
 
 function resetDagHighlights() {
     Object.values(nodes).forEach(n => {
+        if (!n) return;
         n.classList.remove('active-node');
         n.classList.remove('active-tool');
         setStatus(n, 'Idle');
     });
-    Object.values(links).forEach(l => l.classList.remove('active-trail'));
+    Object.values(links).forEach(l => { if (l) l.classList.remove('active-trail'); });
 }
 
 function getTimestamp() {
@@ -1047,75 +1048,75 @@ function renderCharts(metricsData) {
     // Platform Service Level Objectives (SLOs) & Business KPIs Calculations
     // ----------------------------------------------------
     // 1. Success Rate SLO (based on workflow_success vs workflow_errors)
-    const successCount = wfSuccessCounts.reduce((a, b) => a + b, 0);
-    const failureCount = wfErrorCounts.reduce((a, b) => a + b, 0);
-    const totalWfRuns = successCount + failureCount;
-    let successRate = 100.0;
-    if (totalWfRuns > 0) {
-        successRate = (successCount / totalWfRuns) * 100;
+    const sloSuccessCount = wfSuccessCounts.reduce((a, b) => a + b, 0);
+    const sloFailureCount = wfErrorCounts.reduce((a, b) => a + b, 0);
+    const sloTotalRuns = sloSuccessCount + sloFailureCount;
+    let sloSuccessRate = 100.0;
+    if (sloTotalRuns > 0) {
+        sloSuccessRate = (sloSuccessCount / sloTotalRuns) * 100;
     }
     const successEl = document.getElementById('kpi-success-rate');
     const successFill = document.getElementById('kpi-success-fill');
-    successEl.textContent = successRate.toFixed(1) + '%';
+    if (successEl) successEl.textContent = sloSuccessRate.toFixed(1) + '%';
     
-    if (successRate >= 99.5) {
-        successFill.className = 'progress-bar-fill green';
-        successEl.style.color = 'var(--color-support)';
+    if (sloSuccessRate >= 99.5) {
+        if (successFill) successFill.className = 'progress-bar-fill green';
+        if (successEl) successEl.style.color = 'var(--color-support)';
     } else {
-        successFill.className = 'progress-bar-fill red';
-        successEl.style.color = 'var(--google-red)';
+        if (successFill) successFill.className = 'progress-bar-fill red';
+        if (successEl) successEl.style.color = 'var(--google-red)';
     }
-    successFill.style.width = `${successRate}%`;
+    if (successFill) successFill.style.width = `${sloSuccessRate}%`;
 
     // 2. Average Latency SLO (based on Agent Performance Invocations)
     const activeDurations = agentDurations.filter(d => d > 0);
     const avgLatency = activeDurations.length > 0 ? (activeDurations.reduce((a,b)=>a+b,0) / activeDurations.length) : 0;
     const latencyEl = document.getElementById('kpi-latency-val');
     const latencyFill = document.getElementById('kpi-latency-fill');
-    latencyEl.textContent = avgLatency.toFixed(0) + ' ms';
+    if (latencyEl) latencyEl.textContent = avgLatency.toFixed(0) + ' ms';
     
     const latencyPct = Math.min((avgLatency / 5000) * 100, 100);
-    latencyFill.style.width = `${latencyPct}%`;
+    if (latencyFill) latencyFill.style.width = `${latencyPct}%`;
     if (avgLatency < 5000) {
-        latencyFill.className = 'progress-bar-fill green';
-        latencyEl.style.color = 'var(--text-primary)';
+        if (latencyFill) latencyFill.className = 'progress-bar-fill green';
+        if (latencyEl) latencyEl.style.color = 'var(--text-primary)';
     } else {
-        latencyFill.className = 'progress-bar-fill red';
-        latencyEl.style.color = 'var(--google-red)';
+        if (latencyFill) latencyFill.className = 'progress-bar-fill red';
+        if (latencyEl) latencyEl.style.color = 'var(--google-red)';
     }
 
     // 3. Running API Cost KPI
     const totalCost = costs.reduce((a, b) => a + b, 0);
     const costEl = document.getElementById('kpi-cost-val');
     const costFill = document.getElementById('kpi-cost-fill');
-    costEl.textContent = '$' + totalCost.toFixed(4);
+    if (costEl) costEl.textContent = '$' + totalCost.toFixed(4);
     const costPct = Math.min((totalCost / 5.0) * 100, 100);
-    costFill.style.width = `${costPct}%`;
+    if (costFill) costFill.style.width = `${costPct}%`;
     if (totalCost < 5.0) {
-        costFill.className = 'progress-bar-fill green';
-        costEl.style.color = 'var(--text-primary)';
+        if (costFill) costFill.className = 'progress-bar-fill green';
+        if (costEl) costEl.style.color = 'var(--text-primary)';
     } else {
-        costFill.className = 'progress-bar-fill red';
-        costEl.style.color = 'var(--google-red)';
+        if (costFill) costFill.className = 'progress-bar-fill red';
+        if (costEl) costEl.style.color = 'var(--google-red)';
     }
 
     // 4. CSAT Score KPI (based on failures and retries impacting satisfaction)
     let csatScore = 5.0;
-    if (totalWfRuns > 0) {
+    if (sloTotalRuns > 0) {
         const totalRetries = retries.reduce((a,b)=>a+b,0);
-        csatScore = Math.max(1.0, 5.0 - (failureCount * 0.8) - (totalRetries * 0.2));
+        csatScore = Math.max(1.0, 5.0 - (sloFailureCount * 0.8) - (totalRetries * 0.2));
     }
     const csatEl = document.getElementById('kpi-csat-val');
     const csatFill = document.getElementById('kpi-csat-fill');
-    csatEl.textContent = csatScore.toFixed(1) + ' / 5.0';
+    if (csatEl) csatEl.textContent = csatScore.toFixed(1) + ' / 5.0';
     const csatPct = (csatScore / 5.0) * 100;
-    csatFill.style.width = `${csatPct}%`;
+    if (csatFill) csatFill.style.width = `${csatPct}%`;
     if (csatScore >= 4.5) {
-        csatFill.className = 'progress-bar-fill green';
-        csatEl.style.color = 'var(--color-support)';
+        if (csatFill) csatFill.className = 'progress-bar-fill green';
+        if (csatEl) csatEl.style.color = 'var(--color-support)';
     } else {
-        csatFill.className = 'progress-bar-fill red';
-        csatEl.style.color = 'var(--google-red)';
+        if (csatFill) csatFill.className = 'progress-bar-fill red';
+        if (csatEl) csatEl.style.color = 'var(--google-red)';
     }
 }
 

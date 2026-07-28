@@ -528,6 +528,24 @@ def serialize_event(event) -> dict:
 # 6. Initialize FastAPI Application
 app = FastAPI(title="Google ADK Observability Console")
 
+@app.on_event("startup")
+async def startup_event():
+    # Seed baseline host resource telemetry so dashboard has data on boot
+    sys_cpu.record(15.4, {"node": "collector-us-central"})
+    sys_ram.record(52.1, {"node": "collector-us-central"})
+    sys_disk.record(42.3, {"node": "collector-us-central"})
+    sys_net_in.add(1024, {"node": "collector-us-central"})
+    sys_net_out.add(2048, {"node": "collector-us-central"})
+    sys_active_conns.add(2, {"node": "collector-us-central"})
+    
+    # Seed compliance metrics
+    cloud_armor_blocked.add(0, {"policy": "default-security-policy"})
+    cloud_armor_violations.add(0, {"policy": "default-security-policy"})
+    model_armor_prompt_injection.add(0, {"model": "gemini-1.5-pro"})
+    model_armor_jailbreak.add(0, {"model": "gemini-1.5-pro"})
+    model_armor_pii_leak.add(0, {"model": "gemini-1.5-pro"})
+    model_armor_safety.add(0, {"model": "gemini-1.5-pro"})
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -745,5 +763,5 @@ if __name__ == "__main__":
         sys.exit(0)
     
     import uvicorn
-    print("Starting server on http://127.0.0.1:8000 ...")
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+    print("Starting server on http://0.0.0.0:8000 ...")
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
