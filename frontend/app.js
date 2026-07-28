@@ -528,10 +528,10 @@ function renderCharts(metricsData) {
     updateMetricSignal('status-sig-response-size', avgRespSize < 1000);
 
     const avgSteps = steps.reduce((a, b) => a + b, 0) / (steps.filter(v => v > 0).length || 1);
-    updateMetricSignal('status-sig-workflow-steps', avgSteps < 6);
+    updateMetricSignal('status-sig-workflow-steps', avgSteps < 12);
 
     const totalCalls = agentCalls.reduce((a, b) => a + b, 0);
-    updateMetricSignal('status-sig-agent-calls', totalCalls <= 12);
+    updateMetricSignal('status-sig-agent-calls', totalCalls <= 20);
 
     const totalErrors = agentErrors.reduce((a, b) => a + b, 0);
     updateMetricSignal('status-sig-agent-errors', totalErrors === 0);
