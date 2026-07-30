@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 90" width="340" height="90">
+  <defs>
+    <linearGradient id="tcsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF9900" />
+      <stop offset="35%" stop-color="#FF0066" />
+      <stop offset="70%" stop-color="#9900CC" />
+      <stop offset="100%" stop-color="#660099" />
+    </linearGradient>
+  </defs>
+  <!-- TCS Monogram -->
+  <g transform="translate(10, 5)">
+    <!-- t -->
+    <path d="M 22 25 C 22 15, 30 12, 38 12 L 38 22 C 33 22, 30 24, 30 30 L 30 65 C 30 75, 42 75, 48 68 L 48 78 C 38 86, 22 84, 22 68 Z" fill="url(#tcsGrad)" />
+    <rect x="15" y="28" width="30" height="9" rx="4.5" fill="url(#tcsGrad)" />
+    
+    <!-- c -->
+    <path d="M 85 36 C 80 26, 62 25, 54 38 C 44 54, 52 75, 68 76 C 80 77, 86 68, 88 60 L 78 57 C 76 63, 72 68, 65 67 C 55 66, 52 52, 60 42 C 65 35, 76 34, 80 41 Z" fill="url(#tcsGrad)" />
+    
+    <!-- s -->
+    <path d="M 125 38 C 122 28, 106 25, 98 34 C 92 41, 95 49, 104 52 L 114 55 C 125 58, 126 70, 118 76 C 106 85, 92 78, 88 68 L 97 64 C 100 71, 108 74, 115 70 C 120 67, 118 60, 110 58 L 100 55 C 88 51, 88 38, 98 30 C 110 20, 128 27, 133 35 Z" fill="url(#tcsGrad)" />
+  </g>
+  
+  <!-- Divider Line -->
+  <line x1="155" y1="18" x2="155" y2="72" stroke="#0054A6" stroke-width="3.5" stroke-linecap="round" />
+  
+  <!-- TATA CONSULTANCY SERVICES Text -->
+  <g fill="#0054A6" font-family="'Outfit', 'Helvetica Neue', Arial, sans-serif">
+    <!-- TATA -->
+    <text x="175" y="38" font-size="22" font-weight="900" letter-spacing="3">TATA</text>
+    <!-- CONSULTANCY -->
+    <text x="175" y="55" font-size="13.5" font-weight="700" letter-spacing="1.2">CONSULTANCY</text>
+    <!-- SERVICES -->
+    <text x="175" y="71" font-size="13.5" font-weight="700" letter-spacing="2.2">SERVICES</text>
+  </g>
+</svg>

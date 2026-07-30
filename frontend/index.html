@@ -11,8 +11,8 @@
     <!-- FontAwesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Chart.js -->
-    <script src="/static/chart.js?v=1.0.5"></script>
-    <link rel="stylesheet" href="/static/style.css?v=1.0.5">
+    <script src="/static/chart.js?v=1.0.6"></script>
+    <link rel="stylesheet" href="/static/style.css?v=1.0.6">
 </head>
 <body>
     <div class="app-container">
@@ -277,8 +277,12 @@
         <!-- Metrics Section -->
         <section class="metrics-section">
             <div class="section-title">
-                <h2><i class="fa-solid fa-chart-line animate-pulse"></i> Agent Platform Performance Monitoring System</h2>
-                <p>Telemetry fetched directly from InMemoryMetricReader under <code>gcp.vertex.agent</code> OTel standard</p>
+                <div class="tcs-title-header">
+                    <div class="tcs-logo-badge">
+                        <img src="/static/tcs_logo.svg?v=1.0.6" alt="TCS Logo" class="tcs-logo-img">
+                    </div>
+                    <h2>Agent Platform Performance Monitoring System</h2>
+                </div>
             </div>
             
             <div class="metrics-tabs">
