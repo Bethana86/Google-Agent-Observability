@@ -11,8 +11,8 @@
     <!-- FontAwesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Chart.js -->
-    <script src="/static/chart.js?v=1.0.4"></script>
-    <link rel="stylesheet" href="/static/style.css?v=1.0.4">
+    <script src="/static/chart.js?v=1.0.5"></script>
+    <link rel="stylesheet" href="/static/style.css?v=1.0.5">
 </head>
 <body>
     <div class="app-container">
@@ -315,7 +315,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Agent Invocation Latency</h3>
-                            <span class="metric-desc">gen_ai.agent.invocation.duration (ms)</span>
+                            <span class="metric-desc">(ms)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-invocation-duration"></canvas>
@@ -325,7 +325,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Request Payload Size</h3>
-                            <span class="metric-desc">gen_ai.agent.request.size (Bytes)</span>
+                            <span class="metric-desc">(Bytes)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-request-size"></canvas>
@@ -335,7 +335,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Response Payload Size</h3>
-                            <span class="metric-desc">gen_ai.agent.response.size (Bytes)</span>
+                            <span class="metric-desc">(Bytes)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-response-size"></canvas>
@@ -345,7 +345,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Workflow Execution Steps</h3>
-                            <span class="metric-desc">gen_ai.agent.workflow.steps (count)</span>
+                            <span class="metric-desc">(count)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-workflow-steps"></canvas>
@@ -355,7 +355,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Total Invocations</h3>
-                            <span class="metric-desc">gen_ai.agent.calls.count (count)</span>
+                            <span class="metric-desc">(count)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-agent-calls"></canvas>
@@ -365,7 +365,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Agent Execution Errors</h3>
-                            <span class="metric-desc">gen_ai.agent.errors.count (count)</span>
+                            <span class="metric-desc">(count)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-agent-errors"></canvas>
@@ -375,7 +375,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Prompt Tokens</h3>
-                            <span class="metric-desc">gen_ai.agent.token.prompt (tokens)</span>
+                            <span class="metric-desc">(tokens)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-token-prompt"></canvas>
@@ -385,7 +385,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Completion Tokens</h3>
-                            <span class="metric-desc">gen_ai.agent.token.completion (tokens)</span>
+                            <span class="metric-desc">(tokens)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-token-completion"></canvas>
@@ -395,7 +395,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Total Tokens</h3>
-                            <span class="metric-desc">gen_ai.agent.token.total (tokens)</span>
+                            <span class="metric-desc">(tokens)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-token-total"></canvas>
@@ -405,7 +405,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Call Cost</h3>
-                            <span class="metric-desc">gen_ai.agent.cost (USD)</span>
+                            <span class="metric-desc">(USD)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-agent-cost"></canvas>
@@ -415,7 +415,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Retry attempts</h3>
-                            <span class="metric-desc">gen_ai.agent.retry.count (count)</span>
+                            <span class="metric-desc">(count)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-agent-retry"></canvas>
@@ -425,7 +425,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Framework Overhead</h3>
-                            <span class="metric-desc">gen_ai.agent.latency.overhead (ms)</span>
+                            <span class="metric-desc">(ms)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-agent-overhead"></canvas>
@@ -435,7 +435,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Agent Handoffs</h3>
-                            <span class="metric-desc">gen_ai.agent.handoff.count (count)</span>
+                            <span class="metric-desc">(count)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-agent-handoffs"></canvas>
@@ -445,7 +445,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Reasoning Drift</h3>
-                            <span class="metric-desc">gen_ai.agent.reasoning.drift (drift score)</span>
+                            <span class="metric-desc">(drift score)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-agent-reasoning-drift"></canvas>
@@ -455,7 +455,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>RCA Search Depth</h3>
-                            <span class="metric-desc">gen_ai.agent.root_cause.depth (nodes depth)</span>
+                            <span class="metric-desc">(nodes depth)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-agent-rca-depth"></canvas>
@@ -465,7 +465,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>RCA Confidence</h3>
-                            <span class="metric-desc">gen_ai.agent.root_cause.confidence (%)</span>
+                            <span class="metric-desc">(%)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-agent-rca-confidence"></canvas>
@@ -475,7 +475,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Context Memory Reads</h3>
-                            <span class="metric-desc">gen_ai.agent.memory.reads (count)</span>
+                            <span class="metric-desc">(count)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-agent-mem-reads"></canvas>
@@ -485,7 +485,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Context Memory Writes</h3>
-                            <span class="metric-desc">gen_ai.agent.memory.writes (count)</span>
+                            <span class="metric-desc">(count)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-agent-mem-writes"></canvas>
@@ -495,7 +495,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Human Feedback Actions</h3>
-                            <span class="metric-desc">gen_ai.agent.feedback.count (count)</span>
+                            <span class="metric-desc">(count)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-agent-feedback"></canvas>
@@ -505,7 +505,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Fallback Policy Triggers</h3>
-                            <span class="metric-desc">gen_ai.agent.fallback.triggered (count)</span>
+                            <span class="metric-desc">(count)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-agent-fallback"></canvas>
@@ -540,7 +540,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Tool Execution Latency</h3>
-                            <span class="metric-desc">gen_ai.tool.execution.duration (ms)</span>
+                            <span class="metric-desc">(ms)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-tool-duration"></canvas>
@@ -550,7 +550,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Total Tool Calls</h3>
-                            <span class="metric-desc">gen_ai.tool.calls.count (count)</span>
+                            <span class="metric-desc">(count)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-tool-calls"></canvas>
@@ -560,7 +560,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Tool Failure Count</h3>
-                            <span class="metric-desc">gen_ai.tool.errors.count (count)</span>
+                            <span class="metric-desc">(count)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-tool-errors"></canvas>
@@ -570,7 +570,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Tool Cache Hits</h3>
-                            <span class="metric-desc">gen_ai.tool.cache.hit (count)</span>
+                            <span class="metric-desc">(count)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-tool-cache-hit"></canvas>
@@ -580,7 +580,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Tool Cache Misses</h3>
-                            <span class="metric-desc">gen_ai.tool.cache.miss (count)</span>
+                            <span class="metric-desc">(count)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-tool-cache-miss"></canvas>
@@ -590,7 +590,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Tool Payload Size</h3>
-                            <span class="metric-desc">gen_ai.tool.payload.size (Bytes)</span>
+                            <span class="metric-desc">(Bytes)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-tool-payload"></canvas>
@@ -600,7 +600,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Tool Concurrency</h3>
-                            <span class="metric-desc">gen_ai.tool.concurrency (count)</span>
+                            <span class="metric-desc">(count)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-tool-concurrency"></canvas>
@@ -610,7 +610,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Tool Execution Timeouts</h3>
-                            <span class="metric-desc">gen_ai.tool.timeout.count (count)</span>
+                            <span class="metric-desc">(count)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-tool-timeout"></canvas>
@@ -645,7 +645,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Total Session Duration</h3>
-                            <span class="metric-desc">gen_ai.workflow.duration (ms)</span>
+                            <span class="metric-desc">(ms)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-workflow-duration"></canvas>
@@ -655,7 +655,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Concurrently Active Agents</h3>
-                            <span class="metric-desc">gen_ai.workflow.active_agents (count)</span>
+                            <span class="metric-desc">(count)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-workflow-active"></canvas>
@@ -665,7 +665,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Active Session Memory</h3>
-                            <span class="metric-desc">gen_ai.workflow.memory.usage (chars)</span>
+                            <span class="metric-desc">(chars)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-workflow-memory"></canvas>
@@ -675,7 +675,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Estimated Active Tokens</h3>
-                            <span class="metric-desc">gen_ai.workflow.tokens.active (tokens)</span>
+                            <span class="metric-desc">(tokens)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-workflow-tokens"></canvas>
@@ -685,7 +685,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Session Turns Count</h3>
-                            <span class="metric-desc">gen_ai.workflow.turns.count (turns)</span>
+                            <span class="metric-desc">(turns)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-workflow-turns"></canvas>
@@ -695,7 +695,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Workflow Successes</h3>
-                            <span class="metric-desc">gen_ai.workflow.success.count (count)</span>
+                            <span class="metric-desc">(count)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-workflow-run-success"></canvas>
@@ -705,7 +705,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Workflow Failures</h3>
-                            <span class="metric-desc">gen_ai.workflow.errors.count (count)</span>
+                            <span class="metric-desc">(count)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-workflow-run-error"></canvas>
@@ -715,7 +715,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Event Queue Delay</h3>
-                            <span class="metric-desc">gen_ai.workflow.queue.delay (ms)</span>
+                            <span class="metric-desc">(ms)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-workflow-queue-delay"></canvas>
@@ -725,7 +725,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Handoff Sequence Depth</h3>
-                            <span class="metric-desc">gen_ai.workflow.handoff.depth (depth)</span>
+                            <span class="metric-desc">(depth)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-workflow-handoff-depth"></canvas>
@@ -735,7 +735,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Session Concurrency Limit</h3>
-                            <span class="metric-desc">gen_ai.workflow.concurrency.limit (slots)</span>
+                            <span class="metric-desc">(slots)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-workflow-concurrency-limit"></canvas>
@@ -770,7 +770,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Raw LLM Response Latency</h3>
-                            <span class="metric-desc">gen_ai.model.response.latency (ms)</span>
+                            <span class="metric-desc">(ms)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-model-latency"></canvas>
@@ -780,7 +780,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Streaming Chunks Yielded</h3>
-                            <span class="metric-desc">gen_ai.model.stream.chunk.count (count)</span>
+                            <span class="metric-desc">(count)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-model-chunks"></canvas>
@@ -790,7 +790,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Time Between Stream Chunks</h3>
-                            <span class="metric-desc">gen_ai.model.stream.chunk.latency (ms)</span>
+                            <span class="metric-desc">(ms)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-model-chunk-latency"></canvas>
@@ -800,7 +800,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Temperature Setting</h3>
-                            <span class="metric-desc">gen_ai.model.temperature (value)</span>
+                            <span class="metric-desc">(value)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-model-temp"></canvas>
@@ -810,7 +810,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Top P Parameter</h3>
-                            <span class="metric-desc">gen_ai.model.top_p (value)</span>
+                            <span class="metric-desc">(value)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-model-top-p"></canvas>
@@ -820,7 +820,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Top K Parameter</h3>
-                            <span class="metric-desc">gen_ai.model.top_k (value)</span>
+                            <span class="metric-desc">(value)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-model-top-k"></canvas>
@@ -855,7 +855,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>CPU Utilization</h3>
-                            <span class="metric-desc">gen_ai.system.cpu.utilization (%)</span>
+                            <span class="metric-desc">(%)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-sys-cpu"></canvas>
@@ -865,7 +865,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Memory (RAM) Utilization</h3>
-                            <span class="metric-desc">gen_ai.system.memory.utilization (%)</span>
+                            <span class="metric-desc">(%)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-sys-ram"></canvas>
@@ -875,7 +875,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Disk Utilization</h3>
-                            <span class="metric-desc">gen_ai.system.disk.utilization (%)</span>
+                            <span class="metric-desc">(%)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-sys-disk"></canvas>
@@ -885,7 +885,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Inbound Network traffic</h3>
-                            <span class="metric-desc">gen_ai.system.network.bytes.in (Bytes)</span>
+                            <span class="metric-desc">(Bytes)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-sys-net-in"></canvas>
@@ -895,7 +895,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Outbound Network traffic</h3>
-                            <span class="metric-desc">gen_ai.system.network.bytes.out (Bytes)</span>
+                            <span class="metric-desc">(Bytes)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-sys-net-out"></canvas>
@@ -905,7 +905,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Active Consumer Connections</h3>
-                            <span class="metric-desc">gen_ai.system.active.connections (count)</span>
+                            <span class="metric-desc">(count)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-sys-active-conns"></canvas>
@@ -940,7 +940,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Cloud Armor Blocked Requests</h3>
-                            <span class="metric-desc">gen_ai.security.cloud_armor.blocked (count)</span>
+                            <span class="metric-desc">(count)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-policy-ca-blocked"></canvas>
@@ -950,7 +950,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Cloud Armor Violations</h3>
-                            <span class="metric-desc">gen_ai.security.cloud_armor.violations (count)</span>
+                            <span class="metric-desc">(count)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-policy-ca-violations"></canvas>
@@ -960,7 +960,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Model Armor Prompt Injections</h3>
-                            <span class="metric-desc">gen_ai.security.model_armor.prompt_injection (count)</span>
+                            <span class="metric-desc">(count)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-policy-ma-injection"></canvas>
@@ -970,7 +970,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Model Armor Jailbreak Attempts</h3>
-                            <span class="metric-desc">gen_ai.security.model_armor.jailbreak (count)</span>
+                            <span class="metric-desc">(count)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-policy-ma-jailbreak"></canvas>
@@ -980,7 +980,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Model Armor PII Leak Blocks</h3>
-                            <span class="metric-desc">gen_ai.security.model_armor.pii_leak (count)</span>
+                            <span class="metric-desc">(count)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-policy-ma-pii"></canvas>
@@ -990,7 +990,7 @@
                     <div class="card glass-card metric-card">
                         <div class="card-header">
                             <h3>Model Armor Safety Triggers</h3>
-                            <span class="metric-desc">gen_ai.security.model_armor.safety_triggers (count)</span>
+                            <span class="metric-desc">(count)</span>
                         </div>
                         <div class="card-body chart-container">
                             <canvas id="chart-policy-ma-safety"></canvas>
@@ -1009,6 +1009,6 @@
     </div>
 
     <!-- Main Javascript -->
-    <script src="/static/app.js?v=1.0.4"></script>
+    <script src="/static/app.js?v=1.0.5"></script>
 </body>
 </html>
