@@ -36,6 +36,10 @@
                     <span class="pulse-dot"></span>
                     <span class="status-text">Collector: ACTIVE (127.0.0.1:8000)</span>
                 </div>
+                <div class="status-indicator engine-indicator" id="engine-badge">
+                    <span class="pulse-dot blue" id="engine-dot"></span>
+                    <span class="status-text" id="engine-text">Engine: Loading...</span>
+                </div>
                 <button id="btn-theme-toggle" class="btn btn-secondary" title="Toggle Light/Dark Theme">
                     <i class="fa-solid fa-sun" id="theme-icon"></i> <span id="theme-text">Light Mode</span>
                 </button>
@@ -51,7 +55,7 @@
                 <i class="fa-solid fa-circle-info"></i>
             </div>
             <div class="banner-content">
-                <strong>Google Native ADK & OpenTelemetry Integration:</strong> This console registers a custom model to intercept agent requests and simulate a multi-agent system. Telmetry is natively captured using OTel standard <code>gcp.vertex.agent</code> histograms inside the <code>google-adk</code> lifecycle runner. In production, these metrics map directly to <strong>Google Cloud Monitoring</strong> and <strong>Google Cloud Trace</strong>.
+                <strong>Google Native ADK & OpenTelemetry Integration:</strong> This console captures multi-agent telemetry using OpenTelemetry <code>gcp.vertex.agent</code> histograms inside the <code>google-adk</code> lifecycle runner. Supports real-time custom prompt execution, preset scenarios, and exports directly to <strong>Google Cloud Monitoring</strong> and <strong>Google Cloud Trace</strong>.
             </div>
         </section>
 
@@ -62,8 +66,8 @@
                 <!-- Simulation Trigger Card -->
                 <div class="card glass-card">
                     <div class="card-header">
-                        <h2><i class="fa-solid fa-play"></i> Simulation Controller</h2>
-                        <span class="card-subtitle">Select and execute conversational scenarios</span>
+                        <h2><i class="fa-solid fa-sliders"></i> Execution Controller</h2>
+                        <span class="card-subtitle">Select a scenario or enter a live custom prompt</span>
                     </div>
                     <div class="card-body">
                         <div class="scenario-selector">
@@ -90,8 +94,21 @@
                             </div>
                         </div>
                         <button id="btn-run-simulation" class="btn btn-primary btn-block">
-                            <i class="fa-solid fa-bolt"></i> Execute Flow
+                            <i class="fa-solid fa-bolt"></i> Execute Selected Flow
                         </button>
+
+                        <div class="custom-query-divider">
+                            <span>OR RUN CUSTOM LIVE PROMPT</span>
+                        </div>
+
+                        <div class="custom-query-container">
+                            <div class="custom-query-input-group">
+                                <input type="text" id="custom-query-input" placeholder="Type a custom query (e.g. Check my account status)..." class="query-input">
+                                <button id="btn-run-live-query" class="btn btn-secondary btn-send">
+                                    <i class="fa-solid fa-paper-plane"></i> Run
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

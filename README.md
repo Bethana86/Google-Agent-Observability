@@ -1,15 +1,18 @@
-# Google ADK & OpenTelemetry Observability Console
+# Agent Platform Performance Monitoring System
 
-A premium, interactive multi-agent observability dashboard demonstrating native **Google Cloud Vertex AI Agent Engine (ADK)** telemetry. This application exposes **50 production-grade OpenTelemetry metrics** capturing agent performance, tool diagnostics, session workflows, LLM parameter metrics, and system resources.
+A premium, production-grade multi-agent observability platform built on **Google Agent Development Kit (ADK)** and **OpenTelemetry (OTel)** standard `gcp.vertex.agent` metrics. Captures **56 active metrics** across agent performance, tool diagnostics, session workflows, model engine parameter metrics, system resources, and policy & governance guardrails.
+
+---
 
 ## 🌟 Key Features
 
-* **50 Production Observability Metrics**: Completely instrumented utilizing standard semantic OTel histogram, counter, and updowncounter naming specs.
-* **Interactive APM Dashboard**: 5 tabs (*Agent Performance*, *Tool Diagnostics*, *Session & Workflow*, *Model Engine*, and *System Resources*) containing 50 individual Chart.js graphs.
-* **Summary Stats Row**: Live computation of crucial metrics like Cache Hit Rate, Success Rate, Average Overhead, Network throughput, and Token usage.
-* **Beautiful Premium Visuals**: Dark-themed glassmorphism console with custom linear neon gradients and hollow doughnut gauges.
-* **Live Agent Handoff Flow DAG**: Real-time interactive node visualization highlighting Hand-offs (Triage → Billing/Support/Tech) and tool executions.
-* **Cloud Trace Logging Terminal**: SSE console output mimicking production Stackdriver log outputs.
+* **56 Production Observability Metrics**: Fully instrumented using standard OTel histogram, counter, and updowncounter metrics.
+* **Interactive Live Prompt & Scenario Controller**: Type any custom query string or execute preset scenarios to trigger live multi-agent handoff flows and real-time telemetry streaming.
+* **6 Metric Domains**: *Agent Performance*, *Tool Diagnostics*, *Session & Workflow*, *Model Engine*, *System Resources*, and *Policy & Governance*.
+* **Dual Exporter Pipeline**: Real-time local `InMemoryMetricReader` for UI rendering + OTLP Exporter hooks for **Google Cloud Monitoring** & **Google Cloud Trace**.
+* **Policy & Governance Security**: Integrated guardrails tracking **Google Cloud Armor** blocks/violations and **Model Armor** prompt injections, jailbreaks, PII leaks, and safety triggers.
+* **Live DAG Handoff Visualizer**: Node execution state highlighting (Triage → Billing / Support / Technical) streamed over Server-Sent Events (SSE).
+* **Production Container & Cloud Readiness**: Docker containerization (`Dockerfile`), `docker-compose.yml`, health checks (`/api/health`), and GCP Cloud Run deployment guide (`simulationtoproduction.md`).
 
 ---
 
@@ -19,7 +22,7 @@ A premium, interactive multi-agent observability dashboard demonstrating native 
 * Python 3.10+
 * Chrome or any modern web browser
 
-### ⚙️ Installation
+### ⚙️ Installation & Quickstart
 1. Navigate to the project directory:
    ```bash
    cd path/to/multi-agent-observability
@@ -28,15 +31,27 @@ A premium, interactive multi-agent observability dashboard demonstrating native 
    ```bash
    pip install fastapi uvicorn opentelemetry-api opentelemetry-sdk google-adk
    ```
+3. (Optional) Configure environment variables for Live Gemini LLM or OTLP export:
+   ```bash
+   cp .env.example .env
+   ```
+4. Launch the application:
+   ```bash
+   py backend/main.py
+   ```
+5. Open **[http://127.0.0.1:8000](http://127.0.0.1:8000)** in your browser. Type a custom prompt or click any preset scenario button to execute the flow.
 
-### ⚡ Running the Application
-Launch the server:
+### 🐳 Running with Docker
 ```bash
-py backend/main.py
+docker-compose up --build -d
 ```
-Open **[http://127.0.0.1:8000](http://127.0.0.1:8000)** in your browser. Select any conversational scenario (e.g. *System Troubleshooting* or *Billing Refund Request*) and hit **Execute Flow** to trigger real-time telemetry streaming.
+Access the application at `http://localhost:8000`.
 
 ---
+
+## 📖 Complete Guides & Documentation
+* 📘 **[Metric Definitions Guide (`metricsdef.md`)](file:///C:/Users/ASUA/.gemini/antigravity/scratch/multi-agent-observability/metricsdef.md)**: Full breakdown of all 56 metrics, signal IDs, types, and units.
+* 📗 **[Production Deployment Guide (`simulationtoproduction.md`)](file:///C:/Users/ASUA/.gemini/antigravity/scratch/multi-agent-observability/simulationtoproduction.md)**: GCP Cloud Run setup, OTLP collector configuration, and security guardrails.
 
 ## 📊 Metric Categories
 

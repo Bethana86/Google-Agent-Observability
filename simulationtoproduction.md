@@ -1,137 +1,93 @@
-# Simulation to Production Roadmap: Google Cloud Platform (GCP)
+# Transitioning from Simulation to Real-Time Production Architecture
 
-This document provides a guide for translating our local OpenTelemetry agent telemetry simulation into a scalable, production-grade deployment on **Google Cloud Platform (GCP)** using the native Google Cloud Operations Suite (formerly Stackdriver).
+This guide explains how to transition the **Agent Platform Performance Monitoring System** from standalone simulation/demo mode into a **live, enterprise-grade production platform** on Google Cloud Platform (GCP).
 
 ---
 
-## 🗺️ Production Architecture
+## 🏗️ 1. Production Architecture Overview
 
-In a production environment, the in-memory metric collector is replaced by the standard **OpenTelemetry Collector** or the **Google Cloud Ops Agent**, which natively pushes telemetry to Cloud Trace, Cloud Logging, and Cloud Monitoring.
+In a live production environment, the platform operates as a dual-pipeline observability engine:
 
-```mermaid
-graph TD
-    subgraph FastAPI Agent Service (GKE / Cloud Run)
-        ADK[Google Native ADK] -->|Auto-Generated Spans & Histograms| OTelSDK[OTel SDK Provider]
-        OTelSDK -->|OTLP GRPC / Port 4317| OTelColl[OTel Collector Daemon]
-    end
+1. **In-App Real-Time Console**: Uses `InMemoryMetricReader` to expose low-latency telemetry to the FastAPI `/api/metrics` endpoint for local dashboard rendering.
+2. **GCP Operations Exporter**: Configures `PeriodicExportingMetricReader` and `BatchSpanProcessor` to forward standard `gcp.vertex.agent` OpenTelemetry metrics and spans to **Google Cloud Monitoring** and **Google Cloud Trace**.
 
-    subgraph Google Cloud Operations Suite
-        OTelColl -->|Trace Export| GCTrace[Google Cloud Trace]
-        OTelColl -->|Metrics Export| GCMonitor[Google Cloud Monitoring]
-        OTelColl -->|Logs Export| GCLogging[Google Cloud Logging]
-    end
+```
+┌───────────────────────────┐      ┌───────────────────────────────┐
+│ User / Frontend Console   │ ───► │ FastAPI / Google ADK Runner   │
+└───────────────────────────┘      └──────────────┬────────────────┘
+                                                  │
+                                 ┌────────────────┴────────────────┐
+                                 ▼                                 ▼
+                     ┌───────────────────────┐         ┌───────────────────────┐
+                     │ InMemoryMetricReader  │         │ OTLP / GCP Operations │
+                     │  (Local Dashboard)    │         │  (Cloud Monitoring)   │
+                     └───────────────────────┘         └───────────────────────┘
 ```
 
 ---
 
-## 🛠️ Step 1: OpenTelemetry Collector Configuration
+## 🔑 2. Configuring Real Gemini LLM Engine
 
-In production, run the OpenTelemetry Collector as a daemon or sidecar container (e.g., in Google Kubernetes Engine). Configure it with the `googlecloud` exporter.
+To switch from demo mode to live Gemini LLM inference:
 
-Here is a production-grade `otel-collector-config.yaml` snippet:
-
-```yaml
-receivers:
-  otlp:
-    protocols:
-      grpc:
-        endpoint: 0.0.0.0:4317
-      http:
-        endpoint: 0.0.0.0:4318
-
-processors:
-  batch:
-    send_batch_size: 8192
-    timeout: 5s
-  memory_limiter:
-    check_interval: 1s
-    limit_percentage: 75
-    spike_limit_percentage: 15
-
-exporters:
-  googlecloud:
-    project: "your-gcp-project-id"
-    # Credentials are automatically inherited via GCP Workload Identity / Service Account
-    metric:
-      prefix: "custom.googleapis.com/"
-    trace:
-      # Automatically maps OTel spans to Cloud Trace format
-
-service:
-  pipelines:
-    traces:
-      receivers: [otlp]
-      processors: [memory_limiter, batch]
-      exporters: [googlecloud]
-    metrics:
-      receivers: [otlp]
-      processors: [memory_limiter, batch]
-      exporters: [googlecloud]
-```
+1. Create a `.env` file from `.env.example`:
+   ```bash
+   cp .env.example .env
+   ```
+2. Set your Google Gemini API Key:
+   ```env
+   GEMINI_API_KEY=AIzaSyYourActualGeminiApiKeyHere
+   GCP_PROJECT_ID=your-gcp-project-id
+   ```
+3. Start the application. The system will automatically detect the valid API key and display `Engine: LIVE GEMINI 1.5` in the dashboard header.
 
 ---
 
-## ⚙️ Step 2: Live Production SDK Setup (Python)
+## 📡 3. Exporting Telemetry to Google Cloud Operations Suite
 
-To connect the Google ADK runner to GCP, initialize the OTel provider to export to the collector endpoint configured in Step 1 instead of our demo `InMemoryMetricReader`.
+To export OpenTelemetry metrics directly to **Google Cloud Monitoring**:
 
-Install the required packages in your production environment:
+1. Set the OTLP exporter endpoint in your `.env` file:
+   ```env
+   OTEL_EXPORTER_OTLP_ENDPOINT=http://gcp-otel-collector:4317
+   OTEL_SERVICE_NAME=agent-platform-production
+   ```
+2. In production GCP environments (Cloud Run, GKE), attach the **Google Cloud OpenTelemetry Collector sidecar** or use the GCP Cloud Operations OTLP exporter package (`opentelemetry-exporter-gcp-monitoring`).
+
+---
+
+## 🐳 4. Docker Containerization & Deployment
+
+### Running locally with Docker Compose:
 ```bash
-pip install opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp
+docker-compose up --build -d
 ```
+Verify container readiness at:
+- Dashboard: `http://localhost:8000`
+- Health Check: `http://localhost:8000/api/health`
+- Configuration: `http://localhost:8000/api/config`
 
-Add the following initialization code at the very entrypoint of your application (e.g., `main.py` before any ADK imports):
+### Deploying to Google Cloud Run:
+```bash
+# 1. Build and push image to Google Artifact Registry
+gcloud builds submit --tag gcr.io/$GCP_PROJECT_ID/agent-observability-platform:latest
 
-```python
-import os
-from opentelemetry import trace, metrics
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.sdk.metrics import MeterProvider
-from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPTraceExporter
-from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
-from opentelemetry.sdk.resources import Resource
-
-# 1. Define Service Resources
-resource = Resource(attributes={
-    "service.name": "vertex-agent-service",
-    "service.namespace": "production-billing",
-    "service.version": "1.4.0",
-    "cloud.provider": "gcp",
-    "cloud.platform": "gcp_kubernetes_engine"
-})
-
-# 2. Setup Trace Exporter
-otlp_collector_endpoint = os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT", "localhost:4317")
-
-tracer_provider = TracerProvider(resource=resource)
-trace_exporter = OTLPTraceExporter(endpoint=otlp_collector_endpoint, insecure=True)
-tracer_provider.add_span_processor(BatchSpanProcessor(trace_exporter))
-trace.set_tracer_provider(tracer_provider)
-
-# 3. Setup Metric Exporter
-metric_exporter = OTLPMetricExporter(endpoint=otlp_collector_endpoint, insecure=True)
-metric_reader = PeriodicExportingMetricReader(metric_exporter, export_interval_millis=15000)
-meter_provider = MeterProvider(resource=resource, metric_readers=[metric_reader])
-metrics.set_meter_provider(meter_provider)
-
-# 4. Access Meter
-meter = metrics.get_meter("gcp.vertex.agent")
-# All ADK operations will now export directly to Google Cloud!
+# 2. Deploy to Cloud Run with environment variables
+gcloud run deploy agent-observability \
+  --image gcr.io/$GCP_PROJECT_ID/agent-observability-platform:latest \
+  --platform managed \
+  --region us-central1 \
+  --set-env-vars GEMINI_API_KEY=$GEMINI_API_KEY,APP_ENV=production \
+  --allow-unauthenticated
 ```
 
 ---
 
-## 📈 Step 3: Google Cloud Monitoring Dashboards
+## 🛡️ 5. Production Guardrails & Security Policies
 
-Once OTel metrics are exported via the `googlecloud` exporter, they will be registered in GCP. To locate them:
-1. In the GCP Console, go to **Monitoring** > **Metrics Explorer**.
-2. Search for the metric prefix: `custom.googleapis.com/gen_ai.agent.invocation.duration` or `custom.googleapis.com/gen_ai.tool.calls.count`.
-3. Filter by resource labels such as `gen_ai.agent.name`, `gen_ai.tool.name`, or GKE pod namespaces.
-
-### Recommended Production Alerts:
-* **LLM Engine Latency Spike**: Set a threshold alert on `gen_ai.model.response.latency` p95 > 2500ms.
-* **Agent Call Error Rate**: Alert when `gen_ai.agent.errors.count` rates exceed 1% over a 5-minute rolling window.
-* **Tool Cache Miss Spike**: Alert when `gen_ai.tool.cache.miss` rate exceeds 90% (indicates cache/database connection failure).
-* **Token Budget Control**: Monitor `gen_ai.agent.token.total` to prevent unexpected billing costs.
+1. **Google Cloud Armor Integration**:
+   - Configure WAF policies to inspect incoming user requests for SQLi, XSS, and rate limit violations before routing to the agent gateway.
+2. **Model Armor Security**:
+   - Wrap ADK prompt inputs with Model Armor filters to detect and block prompt injection, jailbreaks, PII leakage, and safety policy breaches in real time.
+3. **Authentication**:
+   - Enforce OAuth 2.0 / IAP (Identity-Aware Proxy) authentication on the FastAPI endpoint in production deployments.

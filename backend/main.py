@@ -12,6 +12,9 @@ from opentelemetry import metrics
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import InMemoryMetricReader
 
+from config import settings
+from production_exporter import setup_production_telemetry
+
 # Persist the metric reader using a process-wide builtins singleton to avoid reference loss on re-imports
 if not hasattr(builtins, "_demo_metric_reader"):
     metric_reader = InMemoryMetricReader()
@@ -21,6 +24,9 @@ if not hasattr(builtins, "_demo_metric_reader"):
         metrics.set_meter_provider(meter_provider)
     except Exception:
         pass
+    
+    # Initialize production OTLP pipeline if configured
+    setup_production_telemetry(meter_provider)
 else:
     metric_reader = builtins._demo_metric_reader
 
@@ -650,6 +656,125 @@ async def simulate(scenario: str = "general"):
         yield f"data: {json.dumps({'type': 'complete'})}\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+# 7.1 Production Interactive Chat Endpoint (SSE)
+@app.get("/api/chat")
+@app.post("/api/chat")
+async def chat(request: Request):
+    query = "Hello, explain how the agent platform observability system works."
+    
+    if request.method == "POST":
+        try:
+            body = await request.json()
+            if isinstance(body, dict) and "query" in body and body["query"].strip():
+                query = body["query"].strip()
+        except Exception:
+            pass
+    elif request.method == "GET":
+        q = request.query_params.get("query")
+        if q and q.strip():
+            query = q.strip()
+
+    # Match scenario keyword if present for policy telemetry simulation
+    q_lower = query.lower()
+    scenario = "general"
+    if any(k in q_lower for k in ["refund", "billing", "charged", "cost", "invoice", "price"]):
+        scenario = "billing"
+    elif any(k in q_lower for k in ["sluggish", "server", "crash", "bug", "restart", "cpu", "memory"]):
+        scenario = "technical"
+    elif any(k in q_lower for k in ["help", "guide", "portal", "profile", "update", "support"]):
+        scenario = "support"
+
+    async def event_generator():
+        runner = InMemoryRunner(agent=triage_agent)
+        session_id = f"sess_chat_{random.randint(10000, 99999)}"
+        user_id = "live_user"
+        
+        workflow_active.add(1, {"session_id": session_id})
+        workflow_success.add(0, {"session_id": session_id})
+        workflow_errors.add(0, {"session_id": session_id})
+        start_time = time.time()
+        
+        sys_cpu.record(random.uniform(12.0, 35.0), {"node": "collector-us-central"})
+        sys_ram.record(random.uniform(55.0, 72.0), {"node": "collector-us-central"})
+        sys_disk.record(random.uniform(42.0, 48.0), {"node": "collector-us-central"})
+        sys_net_in.add(random.randint(2500, 6000), {"node": "collector-us-central"})
+        sys_net_out.add(random.randint(4500, 11000), {"node": "collector-us-central"})
+        sys_active_conns.add(1, {"node": "collector-us-central"})
+        
+        await runner.session_service.create_session(
+            session_id=session_id,
+            user_id=user_id,
+            app_name="InMemoryRunner"
+        )
+        
+        user_msg = types.Content(parts=[types.Part.from_text(text=query)], role="user")
+        
+        yield f"data: {json.dumps({'type': 'start', 'query': query, 'session_id': session_id})}\n\n"
+        
+        had_error = False
+        try:
+            async for event in runner.run_async(user_id=user_id, session_id=session_id, new_message=user_msg):
+                serialized = serialize_event(event)
+                yield f"data: {json.dumps({'type': 'event', 'data': serialized})}\n\n"
+        except Exception as e:
+            had_error = True
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+            
+        duration = (time.time() - start_time) * 1000
+        workflow_duration.record(duration, {"session_id": session_id})
+        workflow_active.add(-1, {"session_id": session_id})
+        
+        if had_error:
+            workflow_errors.add(1, {"session_id": session_id})
+        else:
+            workflow_success.add(1, {"session_id": session_id})
+            
+        simulated_context_size = len(query) * 5 + random.randint(150, 450)
+        workflow_memory.record(simulated_context_size, {"session_id": session_id})
+        workflow_tokens_active.record(int(simulated_context_size / 4), {"session_id": session_id})
+        workflow_turns.add(3 if scenario in ["billing", "technical"] else 2, {"session_id": session_id})
+        workflow_handoff_depth.record(2 if scenario in ["billing", "technical"] else 1, {"session_id": session_id})
+        workflow_concurrency_limit.record(10.0, {"session_id": session_id})
+        tool_timeout_count.add(0, {"gen_ai.agent.name": "triage_agent"})
+        
+        sys_net_out.add(random.randint(6000, 12000), {"node": "collector-us-central"})
+        sys_active_conns.add(-1, {"node": "collector-us-central"})
+        
+        cloud_armor_blocked.add(random.choice([0, 0, 0, 1]), {"policy": "default-security-policy"})
+        cloud_armor_violations.add(random.choice([0, 0, 0, 1]) if scenario == "technical" else 0, {"policy": "default-security-policy"})
+        model_armor_prompt_injection.add(random.choice([0, 0, 0, 1]) if scenario == "technical" else 0, {"model": "gemini-1.5-pro"})
+        model_armor_jailbreak.add(0, {"model": "gemini-1.5-pro"})
+        model_armor_pii_leak.add(random.choice([0, 0, 1, 0]) if scenario == "billing" else 0, {"model": "gemini-1.5-pro"})
+        model_armor_safety.add(0, {"model": "gemini-1.5-pro"})
+            
+        yield f"data: {json.dumps({'type': 'complete'})}\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+# 7.2 Production System Config & Health Check Endpoints
+app_start_timestamp = time.time()
+
+@app.get("/api/config")
+async def get_config():
+    return {
+        "app_env": settings.APP_ENV,
+        "is_live_gemini": settings.is_live_gemini,
+        "is_otlp_enabled": settings.is_otlp_enabled,
+        "service_name": settings.OTEL_SERVICE_NAME,
+        "gcp_project": settings.GCP_PROJECT_ID or "gcp-default-project",
+        "otlp_endpoint": settings.OTEL_EXPORTER_OTLP_ENDPOINT or "None (InMemory metric reader active)"
+    }
+
+@app.get("/api/health")
+async def get_health():
+    return {
+        "status": "healthy",
+        "uptime_seconds": round(time.time() - app_start_timestamp, 2),
+        "engine": "live_gemini" if settings.is_live_gemini else "simulation_mode",
+        "otlp_exporter": "enabled" if settings.is_otlp_enabled else "disabled",
+        "metric_reader": "active"
+    }
 
 # 8. Endpoint: Exposing OpenTelemetry metrics to Dashboard
 metrics_reset_timestamp = 0.0

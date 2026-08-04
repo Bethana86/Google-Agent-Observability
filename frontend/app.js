@@ -221,8 +221,51 @@ const metricThresholds = {
     'chart-policy-ma-safety': (data) => data.reduce((a,b)=>a+b,0) === 0
 };
 
-if (btnRunSimulation) btnRunSimulation.addEventListener('click', runSimulation);
+if (btnRunSimulation) btnRunSimulation.addEventListener('click', () => runSimulation());
 if (btnResetAll) btnResetAll.addEventListener('click', resetMetrics);
+
+const btnRunLiveQuery = document.getElementById('btn-run-live-query');
+const customQueryInput = document.getElementById('custom-query-input');
+
+if (btnRunLiveQuery) {
+    btnRunLiveQuery.addEventListener('click', () => {
+        const val = customQueryInput ? customQueryInput.value.trim() : '';
+        if (val) {
+            runSimulation(val);
+        }
+    });
+}
+
+if (customQueryInput) {
+    customQueryInput.addEventListener('keyup', (e) => {
+        if (e.key === 'Enter') {
+            const val = customQueryInput.value.trim();
+            if (val) {
+                runSimulation(val);
+            }
+        }
+    });
+}
+
+async function fetchAppConfig() {
+    try {
+        const res = await fetch('/api/config');
+        const data = await res.json();
+        const engineText = document.getElementById('engine-text');
+        const engineDot = document.getElementById('engine-dot');
+        if (engineText && engineDot) {
+            if (data.is_live_gemini) {
+                engineText.textContent = 'Engine: LIVE GEMINI 1.5';
+                engineDot.className = 'pulse-dot green';
+            } else {
+                engineText.textContent = 'Engine: SIMULATION MODE';
+                engineDot.className = 'pulse-dot blue';
+            }
+        }
+    } catch (e) {
+        console.warn("Could not fetch app config", e);
+    }
+}
 
 // Load metrics on startup
 document.addEventListener('DOMContentLoaded', () => {
@@ -243,24 +286,35 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
+    fetchAppConfig();
     fetchMetrics();
 });
 
-// 2. Simulation Logic (SSE Integration)
-function runSimulation() {
+// 2. Simulation & Live Query Logic (SSE Integration)
+function runSimulation(customQuery = null) {
     if (sseConnection) {
         sseConnection.close();
     }
     
     resetDagHighlights();
     
-    btnRunSimulation.disabled = true;
-    btnRunSimulation.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Executing...';
+    if (btnRunSimulation) {
+        btnRunSimulation.disabled = true;
+        btnRunSimulation.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Executing...';
+    }
+    if (btnRunLiveQuery) {
+        btnRunLiveQuery.disabled = true;
+        btnRunLiveQuery.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Running...';
+    }
     
     logTerminal.innerHTML = '';
     logSystemMessage('CONNECTING', 'Establishing link with Google ADK runner...', 'system-line');
     
-    const url = `/api/simulate?scenario=${currentScenario}`;
+    let url = `/api/simulate?scenario=${currentScenario}`;
+    if (customQuery && customQuery.trim()) {
+        url = `/api/chat?query=${encodeURIComponent(customQuery.trim())}`;
+    }
+    
     sseConnection = new EventSource(url);
     
     sseConnection.onmessage = function(event) {
@@ -278,8 +332,14 @@ function runSimulation() {
         } 
         else if (payload.type === 'error') {
             logSystemMessage('ERROR', payload.message, 'system-line', 'trace');
-            btnRunSimulation.disabled = false;
-            btnRunSimulation.innerHTML = '<i class="fa-solid fa-bolt"></i> Execute Flow';
+            if (btnRunSimulation) {
+                btnRunSimulation.disabled = false;
+                btnRunSimulation.innerHTML = '<i class="fa-solid fa-bolt"></i> Execute Selected Flow';
+            }
+            if (btnRunLiveQuery) {
+                btnRunLiveQuery.disabled = false;
+                btnRunLiveQuery.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Run';
+            }
         } 
         else if (payload.type === 'complete') {
             logSystemMessage('COMPLETE', 'Multi-agent workflow executed successfully. Exporting metrics...', 'system-line');
@@ -287,8 +347,14 @@ function runSimulation() {
             sseConnection.close();
             sseConnection = null;
             
-            btnRunSimulation.disabled = false;
-            btnRunSimulation.innerHTML = '<i class="fa-solid fa-bolt"></i> Execute Flow';
+            if (btnRunSimulation) {
+                btnRunSimulation.disabled = false;
+                btnRunSimulation.innerHTML = '<i class="fa-solid fa-bolt"></i> Execute Selected Flow';
+            }
+            if (btnRunLiveQuery) {
+                btnRunLiveQuery.disabled = false;
+                btnRunLiveQuery.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Run';
+            }
             
             resetDagHighlights();
             
@@ -302,8 +368,14 @@ function runSimulation() {
             sseConnection.close();
             sseConnection = null;
         }
-        btnRunSimulation.disabled = false;
-        btnRunSimulation.innerHTML = '<i class="fa-solid fa-bolt"></i> Execute Flow';
+        if (btnRunSimulation) {
+            btnRunSimulation.disabled = false;
+            btnRunSimulation.innerHTML = '<i class="fa-solid fa-bolt"></i> Execute Selected Flow';
+        }
+        if (btnRunLiveQuery) {
+            btnRunLiveQuery.disabled = false;
+            btnRunLiveQuery.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Run';
+        }
     };
 }
 
