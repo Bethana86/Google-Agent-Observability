@@ -71,25 +71,25 @@
                     </div>
                     <div class="card-body">
                         <div class="scenario-selector">
-                            <div class="scenario-option active" data-scenario="billing">
-                                <div class="option-icon billing"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+                            <div class="scenario-option active" data-scenario="auto_claim">
+                                <div class="option-icon billing"><i class="fa-solid fa-car-burst"></i></div>
                                 <div class="option-info">
-                                    <h3>Billing Refund Request</h3>
-                                    <p>Triage Agent → Billing Specialist → Refund Process</p>
+                                    <h3>Auto Accident Claim</h3>
+                                    <p>Gemma 2 Intake → BigQuery Policy Check → Gemini 2.5 Payout</p>
                                 </div>
                             </div>
-                            <div class="scenario-option" data-scenario="technical">
-                                <div class="option-icon tech"><i class="fa-solid fa-server"></i></div>
+                            <div class="scenario-option" data-scenario="medical_claim">
+                                <div class="option-icon support"><i class="fa-solid fa-hospital"></i></div>
                                 <div class="option-info">
-                                    <h3>System Troubleshooting</h3>
-                                    <p>Triage Agent → Tech Specialist → Server Health & Restart</p>
+                                    <h3>Medical Treatment Claim</h3>
+                                    <p>Gemma 2 Intake → Health Policy Check → Deductible Settlement</p>
                                 </div>
                             </div>
-                            <div class="scenario-option" data-scenario="support">
-                                <div class="option-icon support"><i class="fa-solid fa-headset"></i></div>
+                            <div class="scenario-option" data-scenario="fraud_claim">
+                                <div class="option-icon tech"><i class="fa-solid fa-triangle-exclamation"></i></div>
                                 <div class="option-info">
-                                    <h3>General Portal Support</h3>
-                                    <p>Triage Agent → Support Specialist → Knowledge Base</p>
+                                    <h3>High-Risk Fraud Claim</h3>
+                                    <p>Intake → Policy Check → BigQuery ML Anomaly → SIU Pause</p>
                                 </div>
                             </div>
                         </div>
@@ -103,7 +103,7 @@
 
                         <div class="custom-query-container">
                             <div class="custom-query-input-group">
-                                <input type="text" id="custom-query-input" placeholder="Type a custom query (e.g. Check my account status)..." class="query-input">
+                                <input type="text" id="custom-query-input" placeholder="Type a custom query (e.g. File auto claim for POL-88219)..." class="query-input">
                                 <button id="btn-run-live-query" class="btn btn-secondary btn-send">
                                     <i class="fa-solid fa-paper-plane"></i> Run
                                 </button>
@@ -115,69 +115,71 @@
                 <!-- Live Agent Handoff Flow Diagram (DAG) -->
                 <div class="card glass-card">
                     <div class="card-header">
-                        <h2><i class="fa-solid fa-diagram-project"></i> Live Agent Flow</h2>
-                        <span class="card-subtitle">Real-time visualization of agent handoffs and tool execution</span>
+                        <h2><i class="fa-solid fa-diagram-project"></i> Live Agent Flow & Multi-Model Routing</h2>
+                        <span class="card-subtitle">Real-time visualization of agent handoffs, BigQuery tools, and Gemma vs. Gemini 2.5 routing</span>
                     </div>
                     <div class="card-body flow-diagram-container">
                         <!-- SVG / HTML Flow chart -->
                         <div class="flow-chart">
                             <!-- Root Node -->
                             <div class="flow-node root-node active-trail" id="node-user">
-                                <i class="fa-solid fa-user"></i>
-                                <span>User Query</span>
+                                <i class="fa-solid fa-user-shield"></i>
+                                <span>Insurance Claim</span>
                             </div>
                             
                             <!-- Arrow downward -->
                             <div class="flow-link" id="link-user-triage"></div>
 
-                            <!-- Triage Node -->
-                            <div class="flow-node agent-node" id="node-triage_agent">
-                                <span class="node-badge">ROUTER</span>
-                                <i class="fa-solid fa-filter"></i>
-                                <strong>Triage Agent</strong>
+                            <!-- Intake Node -->
+                            <div class="flow-node agent-node" id="node-claim_intake_agent">
+                                <span class="node-badge">INTAKE (Gemma 2)</span>
+                                <i class="fa-solid fa-clipboard-list"></i>
+                                <strong>Claim Intake</strong>
                                 <span class="node-status">Idle</span>
                             </div>
 
                             <!-- Branching Links -->
                             <div class="branching-container">
-                                <div class="branch-line" id="link-triage-support"></div>
-                                <div class="branch-line" id="link-triage-billing"></div>
-                                <div class="branch-line" id="link-triage-technical"></div>
+                                <div class="branch-line" id="link-intake-policy"></div>
+                                <div class="branch-line" id="link-policy-fraud"></div>
+                                <div class="branch-line" id="link-fraud-adjudication"></div>
                             </div>
 
                             <!-- Multi-Agent Row -->
                             <div class="agents-row">
-                                <div class="flow-node agent-node" id="node-support_agent">
-                                    <span class="node-badge support">SUPPORT</span>
-                                    <i class="fa-solid fa-headset"></i>
-                                    <strong>Support Agent</strong>
+                                <div class="flow-node agent-node" id="node-policy_verification_agent">
+                                    <span class="node-badge support">POLICY (Gemma 2)</span>
+                                    <i class="fa-solid fa-file-contract"></i>
+                                    <strong>Policy Verification</strong>
                                     <span class="node-status">Idle</span>
                                     
-                                    <div class="tool-anchor" id="tool-get_knowledge_base">
-                                        <i class="fa-solid fa-screwdriver-wrench"></i> KB Search
+                                    <div class="tool-anchor" id="tool-query_bigquery_policy_coverage">
+                                        <i class="fa-solid fa-database"></i> BigQuery Policy
                                     </div>
                                 </div>
                                 
-                                <div class="flow-node agent-node" id="node-billing_agent">
-                                    <span class="node-badge billing">BILLING</span>
-                                    <i class="fa-solid fa-file-invoice-dollar"></i>
-                                    <strong>Billing Agent</strong>
+                                <div class="flow-node agent-node" id="node-fraud_assessment_agent">
+                                    <span class="node-badge billing">FRAUD (Gemini 2.5)</span>
+                                    <i class="fa-solid fa-shield-cat"></i>
+                                    <strong>Fraud Risk Agent</strong>
                                     <span class="node-status">Idle</span>
                                     
-                                    <div class="tools-anchor-col">
-                                        <div class="tool-anchor" id="tool-check_billing_status">
-                                            <i class="fa-solid fa-shield"></i> Billing Chk
-                                        </div>
-                                        <div class="tool-anchor" id="tool-process_refund">
-                                            <i class="fa-solid fa-credit-card"></i> Process Refund
-                                        </div>
+                                    <div class="tool-anchor" id="tool-query_bigquery_fraud_anomalies">
+                                        <i class="fa-solid fa-brain"></i> BigQuery ML Fraud
                                     </div>
                                 </div>
                                 
-                                <div class="flow-node agent-node" id="node-technical_agent">
-                                    <span class="node-badge tech">TECHNICAL</span>
-                                    <i class="fa-solid fa-server"></i>
-                                    <strong>Tech Agent</strong>
+                                <div class="flow-node agent-node" id="node-claim_adjudication_agent">
+                                    <span class="node-badge tech">PAYOUT (Gemini 2.5)</span>
+                                    <i class="fa-solid fa-scale-balanced"></i>
+                                    <strong>Adjudication Expert</strong>
+                                    <span class="node-status">Idle</span>
+                                    
+                                    <div class="tool-anchor" id="tool-calculate_claim_payout">
+                                        <i class="fa-solid fa-calculator"></i> BigQuery Payout
+                                    </div>
+                                </div>
+                            </div>
                                     <span class="node-status">Idle</span>
                                     
                                     <div class="tools-anchor-col">

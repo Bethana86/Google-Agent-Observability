@@ -1,5 +1,5 @@
 // State Variables
-let currentScenario = 'billing';
+let currentScenario = 'auto_claim';
 let sseConnection = null;
 let charts = {};
 
@@ -44,24 +44,22 @@ if (btnThemeToggle) {
 // Nodes for DAG Flow
 const nodes = {
     user: document.getElementById('node-user'),
-    triage: document.getElementById('node-triage_agent'),
-    support: document.getElementById('node-support_agent'),
-    billing: document.getElementById('node-billing_agent'),
-    technical: document.getElementById('node-technical_agent'),
+    intake: document.getElementById('node-claim_intake_agent'),
+    policy: document.getElementById('node-policy_verification_agent'),
+    fraud: document.getElementById('node-fraud_assessment_agent'),
+    adjudicate: document.getElementById('node-claim_adjudication_agent'),
     
     // Tools
-    kb: document.getElementById('tool-get_knowledge_base'),
-    billingChk: document.getElementById('tool-check_billing_status'),
-    refundProc: document.getElementById('tool-process_refund'),
-    srvStatus: document.getElementById('tool-check_server_status'),
-    svcRestart: document.getElementById('tool-restart_service')
+    toolPolicy: document.getElementById('tool-query_bigquery_policy_coverage'),
+    toolFraud: document.getElementById('tool-query_bigquery_fraud_anomalies'),
+    toolPayout: document.getElementById('tool-calculate_claim_payout')
 };
 
 const links = {
     userTriage: document.getElementById('link-user-triage'),
-    triageSupport: document.getElementById('link-triage-support'),
-    triageBilling: document.getElementById('link-triage-billing'),
-    triageTechnical: document.getElementById('link-triage-technical')
+    intakePolicy: document.getElementById('link-intake-policy'),
+    policyFraud: document.getElementById('link-policy-fraud'),
+    fraudAdjudication: document.getElementById('link-fraud-adjudication')
 };
 
 // 1. Initialize Event Listeners
@@ -386,22 +384,30 @@ function handleAgentEvent(event) {
     
     Object.values(nodes).forEach(n => { if (n) n.classList.remove('active-node'); });
     
-    if (author === 'triage_agent') {
-        nodes.triage.classList.add('active-node');
-        setStatus(nodes.triage, 'Active');
-        links.userTriage.classList.add('active-trail');
-    } else if (author === 'support_agent') {
-        nodes.support.classList.add('active-node');
-        setStatus(nodes.support, 'Running');
-        links.triageSupport.classList.add('active-trail');
-    } else if (author === 'billing_agent') {
-        nodes.billing.classList.add('active-node');
-        setStatus(nodes.billing, 'Running');
-        links.triageBilling.classList.add('active-trail');
-    } else if (author === 'technical_agent') {
-        nodes.technical.classList.add('active-node');
-        setStatus(nodes.technical, 'Running');
-        links.triageTechnical.classList.add('active-trail');
+    if (author === 'claim_intake_agent') {
+        if (nodes.intake) {
+            nodes.intake.classList.add('active-node');
+            setStatus(nodes.intake, 'Intake Active');
+        }
+        if (links.userTriage) links.userTriage.classList.add('active-trail');
+    } else if (author === 'policy_verification_agent') {
+        if (nodes.policy) {
+            nodes.policy.classList.add('active-node');
+            setStatus(nodes.policy, 'BigQuery Check');
+        }
+        if (links.intakePolicy) links.intakePolicy.classList.add('active-trail');
+    } else if (author === 'fraud_assessment_agent') {
+        if (nodes.fraud) {
+            nodes.fraud.classList.add('active-node');
+            setStatus(nodes.fraud, 'Gemini 2.5 ML Fraud');
+        }
+        if (links.policyFraud) links.policyFraud.classList.add('active-trail');
+    } else if (author === 'claim_adjudication_agent') {
+        if (nodes.adjudicate) {
+            nodes.adjudicate.classList.add('active-node');
+            setStatus(nodes.adjudicate, 'Payout Settlement');
+        }
+        if (links.fraudAdjudication) links.fraudAdjudication.classList.add('active-trail');
     }
     
     if (type === 'tool_call') {
