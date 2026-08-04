@@ -7,13 +7,13 @@ import builtins
 from typing import AsyncGenerator, Any
 
 # 1. Initialize OpenTelemetry Metric Reader and Meter Provider globally
-# MUST be set up before importing google.adk to prevent ADK from initializing noop meters!
 from opentelemetry import metrics
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import InMemoryMetricReader
 
 from config import settings
 from production_exporter import setup_production_telemetry
+from model_router import model_router
 
 # Persist the metric reader using a process-wide builtins singleton to avoid reference loss on re-imports
 if not hasattr(builtins, "_demo_metric_reader"):
@@ -33,8 +33,8 @@ else:
 # Create the global meter instance
 meter = metrics.get_meter("gcp.vertex.agent")
 
-# Custom metrics (bringing the total to 50 including the 5 ADK default metrics)
-# Agent Performance (20 total: 4 ADK default + 16 custom)
+# Custom metrics (bringing the total to 56 OpenTelemetry metrics)
+# Agent Performance (20 total)
 agent_calls_counter = meter.create_counter("gen_ai.agent.calls.count", description="Total agent invocations")
 agent_errors_counter = meter.create_counter("gen_ai.agent.errors.count", description="Total agent execution errors")
 agent_token_prompt = meter.create_counter("gen_ai.agent.token.prompt", description="Total input prompt tokens")
@@ -52,7 +52,7 @@ agent_mem_writes = meter.create_counter("gen_ai.agent.memory.writes", descriptio
 agent_feedback_count = meter.create_counter("gen_ai.agent.feedback.count", description="Human-in-the-loop feedback actions")
 agent_fallback_triggered = meter.create_counter("gen_ai.agent.fallback.triggered", description="Fallback grounding policy triggers")
 
-# Tool Diagnostics (8 total: 1 ADK default + 7 custom)
+# Tool Diagnostics (8 total)
 tool_calls_counter = meter.create_counter("gen_ai.tool.calls.count", description="Total tool executions")
 tool_errors_counter = meter.create_counter("gen_ai.tool.errors.count", description="Total tool failures")
 tool_cache_hit = meter.create_counter("gen_ai.tool.cache.hit", description="Tool results retrieved from cache")
@@ -61,7 +61,7 @@ tool_payload_size = meter.create_histogram("gen_ai.tool.payload.size", descripti
 tool_concurrency = meter.create_up_down_counter("gen_ai.tool.concurrency", description="Active concurrent tool executions")
 tool_timeout_count = meter.create_counter("gen_ai.tool.timeout.count", description="Total tool execution timeouts")
 
-# Session & Workflow (10 total: 10 custom)
+# Session & Workflow (10 total)
 workflow_duration = meter.create_histogram("gen_ai.workflow.duration", description="Total session workflow duration in ms")
 workflow_active = meter.create_up_down_counter("gen_ai.workflow.active_agents", description="Number of concurrently active agents")
 workflow_memory = meter.create_histogram("gen_ai.workflow.memory.usage", description="Session context window size in characters")
@@ -73,7 +73,7 @@ workflow_queue_delay = meter.create_histogram("gen_ai.workflow.queue.delay", des
 workflow_handoff_depth = meter.create_histogram("gen_ai.workflow.handoff.depth", description="Total handoff sequence depth")
 workflow_concurrency_limit = meter.create_histogram("gen_ai.workflow.concurrency.limit", description="Max concurrency session limit")
 
-# LLM Engine Metrics (6 total: 6 custom)
+# LLM Engine Metrics (6 total)
 model_latency = meter.create_histogram("gen_ai.model.response.latency", description="Raw model response latency in ms")
 model_chunks = meter.create_counter("gen_ai.model.stream.chunk.count", description="Streaming chunks yielded")
 model_chunk_latency = meter.create_histogram("gen_ai.model.stream.chunk.latency", description="Time between streaming chunks in ms")
@@ -81,7 +81,7 @@ model_temp = meter.create_histogram("gen_ai.model.temperature", description="Tem
 model_top_p = meter.create_histogram("gen_ai.model.top_p", description="Top_p parameter value")
 model_top_k = meter.create_histogram("gen_ai.model.top_k", description="Top_k parameter value")
 
-# System Resources (6 total: 6 custom)
+# System Resources (6 total)
 sys_cpu = meter.create_histogram("gen_ai.system.cpu.utilization", description="Host CPU utilization percentage")
 sys_ram = meter.create_histogram("gen_ai.system.memory.utilization", description="Host RAM utilization percentage")
 sys_disk = meter.create_histogram("gen_ai.system.disk.utilization", description="Host disk utilization percentage")
@@ -89,7 +89,7 @@ sys_net_in = meter.create_counter("gen_ai.system.network.bytes.in", description=
 sys_net_out = meter.create_counter("gen_ai.system.network.bytes.out", description="Outbound network traffic in bytes")
 sys_active_conns = meter.create_up_down_counter("gen_ai.system.active.connections", description="Active consumer connections")
 
-# Policy & Governance (6 total: 6 custom)
+# Policy & Governance (6 total)
 cloud_armor_blocked = meter.create_counter("gen_ai.security.cloud_armor.blocked", description="Requests blocked by Cloud Armor policies")
 cloud_armor_violations = meter.create_counter("gen_ai.security.cloud_armor.violations", description="SQL injection or XSS violations flagged")
 model_armor_prompt_injection = meter.create_counter("gen_ai.security.model_armor.prompt_injection", description="Prompt injection attempts blocked by Model Armor")
@@ -113,83 +113,106 @@ from google.adk.runners import InMemoryRunner
 from google.genai import types
 
 
-from bigquery_service import bq_service
-from model_router import model_router
-
-
-# 2. Define the Application Tools (BigQuery Synthetic Dataset Integration)
-def query_bigquery_policy_coverage(policy_id: str) -> str:
-    """Queries BigQuery claims_db.policyholders table to verify coverage limits and deductibles.
+# 2. Define Application Tools
+def get_knowledge_base(topic: str) -> str:
+    """Search knowledge base articles for help.
     
     Args:
-        policy_id: The unique policy identifier (e.g. POL-88219).
+        topic: The topic search query.
     """
-    agent_name = "policy_verification_agent"
-    tool_name = "query_bigquery_policy_coverage"
-    tool_calls_counter.add(1, {"gen_ai.agent.name": agent_name, "gen_ai.tool.name": tool_name})
-    tool_errors_counter.add(0, {"gen_ai.agent.name": agent_name, "gen_ai.tool.name": tool_name})
-    tool_concurrency.add(1, {"gen_ai.agent.name": agent_name, "gen_ai.tool.name": tool_name})
-    tool_payload_size.record(len(policy_id) + 120, {"gen_ai.agent.name": agent_name, "gen_ai.tool.name": tool_name})
+    tool_calls_counter.add(1, {"gen_ai.agent.name": "support_agent", "gen_ai.tool.name": "get_knowledge_base"})
+    tool_errors_counter.add(0, {"gen_ai.agent.name": "support_agent", "gen_ai.tool.name": "get_knowledge_base"})
+    tool_concurrency.add(1, {"gen_ai.agent.name": "support_agent", "gen_ai.tool.name": "get_knowledge_base"})
+    tool_payload_size.record(len(topic) + 80, {"gen_ai.agent.name": "support_agent", "gen_ai.tool.name": "get_knowledge_base"})
     
-    if random.random() < 0.35:
-        tool_cache_hit.add(1, {"gen_ai.agent.name": agent_name, "gen_ai.tool.name": tool_name})
-        tool_cache_miss.add(0, {"gen_ai.agent.name": agent_name, "gen_ai.tool.name": tool_name})
+    if random.random() < 0.30:
+        tool_cache_hit.add(1, {"gen_ai.agent.name": "support_agent", "gen_ai.tool.name": "get_knowledge_base"})
+        tool_cache_miss.add(0, {"gen_ai.agent.name": "support_agent", "gen_ai.tool.name": "get_knowledge_base"})
     else:
-        tool_cache_hit.add(0, {"gen_ai.agent.name": agent_name, "gen_ai.tool.name": tool_name})
-        tool_cache_miss.add(1, {"gen_ai.agent.name": agent_name, "gen_ai.tool.name": tool_name})
-        
-    res = bq_service.query_policy_coverage(policy_id)
-    tool_concurrency.add(-1, {"gen_ai.agent.name": agent_name, "gen_ai.tool.name": tool_name})
-    return f"BIGQUERY_POLICY_RESULT: Dataset: {res['dataset']}, Policy: {res['data']['policy_id']}, Type: {res['data']['policy_type']}, Status: {res['data']['status']}, Limit: ${res['data']['coverage_limit']}, Deductible: ${res['data']['deductible']}."
+        tool_cache_hit.add(0, {"gen_ai.agent.name": "support_agent", "gen_ai.tool.name": "get_knowledge_base"})
+        tool_cache_miss.add(1, {"gen_ai.agent.name": "support_agent", "gen_ai.tool.name": "get_knowledge_base"})
+    time.sleep(0.4)
+    tool_concurrency.add(-1, {"gen_ai.agent.name": "support_agent", "gen_ai.tool.name": "get_knowledge_base"})
+    return f"KNOWLEDGE_BASE: Found article. Service portal is fully operational. topic: '{topic}'."
 
-def query_bigquery_fraud_anomalies(claim_id: str, policy_id: str) -> str:
-    """Queries BigQuery claims_db.fraud_indicators table and runs ML anomaly detection.
+def check_billing_status(user_id: str) -> str:
+    """Check the user's billing record and subscription status.
     
     Args:
-        claim_id: The claim identifier (e.g. CLM-7701).
-        policy_id: The policy identifier.
+        user_id: The unique user identifier.
     """
-    agent_name = "fraud_assessment_agent"
-    tool_name = "query_bigquery_fraud_anomalies"
-    tool_calls_counter.add(1, {"gen_ai.agent.name": agent_name, "gen_ai.tool.name": tool_name})
-    tool_errors_counter.add(0, {"gen_ai.agent.name": agent_name, "gen_ai.tool.name": tool_name})
-    tool_concurrency.add(1, {"gen_ai.agent.name": agent_name, "gen_ai.tool.name": tool_name})
-    tool_payload_size.record(len(claim_id) + len(policy_id) + 140, {"gen_ai.agent.name": agent_name, "gen_ai.tool.name": tool_name})
+    tool_calls_counter.add(1, {"gen_ai.agent.name": "billing_agent", "gen_ai.tool.name": "check_billing_status"})
+    tool_errors_counter.add(0, {"gen_ai.agent.name": "billing_agent", "gen_ai.tool.name": "check_billing_status"})
+    tool_concurrency.add(1, {"gen_ai.agent.name": "billing_agent", "gen_ai.tool.name": "check_billing_status"})
+    tool_payload_size.record(len(user_id) + 100, {"gen_ai.agent.name": "billing_agent", "gen_ai.tool.name": "check_billing_status"})
     
-    tool_cache_hit.add(0, {"gen_ai.agent.name": agent_name, "gen_ai.tool.name": tool_name})
-    tool_cache_miss.add(1, {"gen_ai.agent.name": agent_name, "gen_ai.tool.name": tool_name})
-    
-    res = bq_service.query_fraud_indicators(claim_id, policy_id)
-    tool_concurrency.add(-1, {"gen_ai.agent.name": agent_name, "gen_ai.tool.name": tool_name})
-    flags = ", ".join(res['data']['anomaly_flags']) if res['data']['anomaly_flags'] else "None"
-    return f"BIGQUERY_FRAUD_RESULT: Risk Score: {res['data']['fraud_risk_score']}, Anomaly Flags: [{flags}], Recommendation: {res['data']['recommendation']}."
+    if random.random() < 0.30:
+        tool_cache_hit.add(1, {"gen_ai.agent.name": "billing_agent", "gen_ai.tool.name": "check_billing_status"})
+        tool_cache_miss.add(0, {"gen_ai.agent.name": "billing_agent", "gen_ai.tool.name": "check_billing_status"})
+    else:
+        tool_cache_hit.add(0, {"gen_ai.agent.name": "billing_agent", "gen_ai.tool.name": "check_billing_status"})
+        tool_cache_miss.add(1, {"gen_ai.agent.name": "billing_agent", "gen_ai.tool.name": "check_billing_status"})
+    time.sleep(0.5)
+    tool_concurrency.add(-1, {"gen_ai.agent.name": "billing_agent", "gen_ai.tool.name": "check_billing_status"})
+    return f"BILLING_STATUS: User {user_id} subscription Plan: Gold, Status: Active, Last invoice: $49.99 (PAID)."
 
-def calculate_claim_payout(claim_amount: float, policy_id: str) -> str:
-    """Calculates final claim settlement payout considering deductibles and policy limits.
+def process_refund(user_id: str, amount: float) -> str:
+    """Process a billing refund for a transaction.
     
     Args:
-        claim_amount: Claimed loss amount in USD.
-        policy_id: The policy identifier.
+        user_id: The unique user identifier.
+        amount: The refund amount in USD.
     """
-    agent_name = "claim_adjudication_agent"
-    tool_name = "calculate_claim_payout"
-    tool_calls_counter.add(1, {"gen_ai.agent.name": agent_name, "gen_ai.tool.name": tool_name})
-    tool_errors_counter.add(0, {"gen_ai.agent.name": agent_name, "gen_ai.tool.name": tool_name})
-    tool_concurrency.add(1, {"gen_ai.agent.name": agent_name, "gen_ai.tool.name": tool_name})
-    tool_payload_size.record(len(policy_id) + 100, {"gen_ai.agent.name": agent_name, "gen_ai.tool.name": tool_name})
+    tool_calls_counter.add(1, {"gen_ai.agent.name": "billing_agent", "gen_ai.tool.name": "process_refund"})
+    tool_errors_counter.add(0, {"gen_ai.agent.name": "billing_agent", "gen_ai.tool.name": "process_refund"})
+    tool_concurrency.add(1, {"gen_ai.agent.name": "billing_agent", "gen_ai.tool.name": "process_refund"})
+    tool_payload_size.record(len(user_id) + 110, {"gen_ai.agent.name": "billing_agent", "gen_ai.tool.name": "process_refund"})
     
-    tool_cache_hit.add(1, {"gen_ai.agent.name": agent_name, "gen_ai.tool.name": tool_name})
-    tool_cache_miss.add(0, {"gen_ai.agent.name": agent_name, "gen_ai.tool.name": tool_name})
-    
-    policy_res = bq_service.query_policy_coverage(policy_id)
-    deductible = policy_res['data']['deductible']
-    limit = policy_res['data']['coverage_limit']
-    
-    payout = max(0.0, min(claim_amount - deductible, limit))
-    tool_concurrency.add(-1, {"gen_ai.agent.name": agent_name, "gen_ai.tool.name": tool_name})
-    return f"PAYOUT_CALCULATION: Claimed: ${claim_amount:.2f}, Deductible: ${deductible:.2f}, Approved Payout: ${payout:.2f}."
+    tool_cache_hit.add(0, {"gen_ai.agent.name": "billing_agent", "gen_ai.tool.name": "process_refund"})
+    tool_cache_miss.add(1, {"gen_ai.agent.name": "billing_agent", "gen_ai.tool.name": "process_refund"})
+    time.sleep(0.7)
+    tool_concurrency.add(-1, {"gen_ai.agent.name": "billing_agent", "gen_ai.tool.name": "process_refund"})
+    return f"REFUND_SUCCESS: Refund of ${amount} approved for user {user_id}. Transaction Reference: REF_TX_98122."
 
-# 3. Implement custom Mock LLM Connection simulating Gemma 2 & Gemini 2.5 Multi-Model Routing
+def check_server_status(server_name: str) -> str:
+    """Check the health status and resource utilization of a server.
+    
+    Args:
+        server_name: The hostname or identifier of the server.
+    """
+    tool_calls_counter.add(1, {"gen_ai.agent.name": "technical_agent", "gen_ai.tool.name": "check_server_status"})
+    tool_errors_counter.add(0, {"gen_ai.agent.name": "technical_agent", "gen_ai.tool.name": "check_server_status"})
+    tool_concurrency.add(1, {"gen_ai.agent.name": "technical_agent", "gen_ai.tool.name": "check_server_status"})
+    tool_payload_size.record(len(server_name) + 115, {"gen_ai.agent.name": "technical_agent", "gen_ai.tool.name": "check_server_status"})
+    
+    if random.random() < 0.30:
+        tool_cache_hit.add(1, {"gen_ai.agent.name": "technical_agent", "gen_ai.tool.name": "check_server_status"})
+        tool_cache_miss.add(0, {"gen_ai.agent.name": "technical_agent", "gen_ai.tool.name": "check_server_status"})
+    else:
+        tool_cache_hit.add(0, {"gen_ai.agent.name": "technical_agent", "gen_ai.tool.name": "check_server_status"})
+        tool_cache_miss.add(1, {"gen_ai.agent.name": "technical_agent", "gen_ai.tool.name": "check_server_status"})
+    time.sleep(0.4)
+    tool_concurrency.add(-1, {"gen_ai.agent.name": "technical_agent", "gen_ai.tool.name": "check_server_status"})
+    return f"SERVER_STATUS: Server '{server_name}' UP. CPU: 14%, RAM: 62% utilized, Disk: 48% free. Health: HEALTHY."
+
+def restart_service(service_name: str) -> str:
+    """Perform a service restart on the production server.
+    
+    Args:
+        service_name: The name of the service to restart (e.g. web_server).
+    """
+    tool_calls_counter.add(1, {"gen_ai.agent.name": "technical_agent", "gen_ai.tool.name": "restart_service"})
+    tool_errors_counter.add(0, {"gen_ai.agent.name": "technical_agent", "gen_ai.tool.name": "restart_service"})
+    tool_concurrency.add(1, {"gen_ai.agent.name": "technical_agent", "gen_ai.tool.name": "restart_service"})
+    tool_payload_size.record(len(service_name) + 90, {"gen_ai.agent.name": "technical_agent", "gen_ai.tool.name": "restart_service"})
+    
+    tool_cache_hit.add(0, {"gen_ai.agent.name": "technical_agent", "gen_ai.tool.name": "restart_service"})
+    tool_cache_miss.add(1, {"gen_ai.agent.name": "technical_agent", "gen_ai.tool.name": "restart_service"})
+    time.sleep(0.9)
+    tool_concurrency.add(-1, {"gen_ai.agent.name": "technical_agent", "gen_ai.tool.name": "restart_service"})
+    return f"RESTART_SUCCESS: Service '{service_name}' restarted. PID: 8829, Status: RUNNING."
+
+# 3. Custom Mock LLM Connection with Multi-Model Routing (Gemma 2 vs Gemini 2.5)
 class MockGeminiLlmConnection(BaseLlmConnection):
     async def generate_content_async(
         self, llm_request: LlmRequest, stream: bool = False
@@ -204,10 +227,10 @@ class MockGeminiLlmConnection(BaseLlmConnection):
                 agent_instruction = " ".join([p.text for p in sys_inst.parts if p.text])
         
         inst_lower = agent_instruction.lower()
-        is_policy = "you are policy_verification_agent" in inst_lower or 'internal name is "policy_verification_agent"' in inst_lower
-        is_fraud = "you are fraud_assessment_agent" in inst_lower or 'internal name is "fraud_assessment_agent"' in inst_lower
-        is_adjudication = "you are claim_adjudication_agent" in inst_lower or 'internal name is "claim_adjudication_agent"' in inst_lower
-        is_intake = "you are claim_intake_agent" in inst_lower or 'internal name is "claim_intake_agent"' in inst_lower or not (is_policy or is_fraud or is_adjudication)
+        is_support = "you are support_agent" in inst_lower or 'internal name is "support_agent"' in inst_lower
+        is_billing = "you are billing_agent" in inst_lower or 'internal name is "billing_agent"' in inst_lower
+        is_technical = "you are technical_agent" in inst_lower or 'internal name is "technical_agent"' in inst_lower
+        is_triage = "you are triage_agent" in inst_lower or 'internal name is "triage_agent"' in inst_lower or not (is_support or is_billing or is_technical)
         
         user_query = ""
         for content in llm_request.contents:
@@ -219,13 +242,13 @@ class MockGeminiLlmConnection(BaseLlmConnection):
                     break
         user_query = user_query.strip().lower()
         
-        agent_name = "claim_intake_agent"
-        if is_policy:
-            agent_name = "policy_verification_agent"
-        elif is_fraud:
-            agent_name = "fraud_assessment_agent"
-        elif is_adjudication:
-            agent_name = "claim_adjudication_agent"
+        agent_name = "triage_agent"
+        if is_support:
+            agent_name = "support_agent"
+        elif is_billing:
+            agent_name = "billing_agent"
+        elif is_technical:
+            agent_name = "technical_agent"
             
         route = model_router.get_route_for_agent(agent_name)
         active_model_id = route["model_id"]
@@ -236,8 +259,8 @@ class MockGeminiLlmConnection(BaseLlmConnection):
         agent_errors_counter.add(0, {"gen_ai.agent.name": agent_name, "gen_ai.model": active_model_id})
         
         prompt_len = sum(len(p.text or "") for c in llm_request.contents for p in c.parts)
-        prompt_tokens = int(prompt_len / 4) + 12
-        completion_tokens = random.randint(20, 80)
+        prompt_tokens = int(prompt_len / 4) + 10
+        completion_tokens = random.randint(15, 60)
         agent_token_prompt.add(prompt_tokens, {"gen_ai.agent.name": agent_name})
         agent_token_completion.add(completion_tokens, {"gen_ai.agent.name": agent_name})
         agent_token_total.add(prompt_tokens + completion_tokens, {"gen_ai.agent.name": agent_name})
@@ -252,124 +275,166 @@ class MockGeminiLlmConnection(BaseLlmConnection):
         model_top_k.record(route["top_k"], {"gen_ai.agent.name": agent_name, "gen_ai.model": active_model_id})
         
         model_latency.record(random.uniform(150.0, 450.0) if route["route_type"] == "routine" else random.uniform(400.0, 850.0), {"gen_ai.agent.name": agent_name})
-        model_chunks.add(random.randint(4, 10), {"gen_ai.agent.name": agent_name})
-        model_chunk_latency.record(random.uniform(8.0, 20.0), {"gen_ai.agent.name": agent_name})
+        model_chunks.add(random.randint(5, 12), {"gen_ai.agent.name": agent_name})
+        model_chunk_latency.record(random.uniform(10.0, 25.0), {"gen_ai.agent.name": agent_name})
         workflow_queue_delay.record(random.uniform(1.0, 4.0), {"gen_ai.agent.name": agent_name})
         
-        agent_reasoning_drift.record(random.uniform(0.01, 0.12), {"gen_ai.agent.name": agent_name})
-        agent_rca_depth.record(random.randint(1, 3), {"gen_ai.agent.name": agent_name})
-        agent_rca_confidence.record(random.uniform(90.0, 99.5), {"gen_ai.agent.name": agent_name})
-        agent_mem_reads.add(random.randint(1, 4), {"gen_ai.agent.name": agent_name})
-        agent_mem_writes.add(random.randint(1, 2), {"gen_ai.agent.name": agent_name})
+        agent_reasoning_drift.record(random.uniform(0.01, 0.15), {"gen_ai.agent.name": agent_name})
+        agent_rca_depth.record(random.randint(1, 4), {"gen_ai.agent.name": agent_name})
+        agent_rca_confidence.record(random.uniform(85.0, 99.0), {"gen_ai.agent.name": agent_name})
+        agent_mem_reads.add(random.randint(1, 3), {"gen_ai.agent.name": agent_name})
+        agent_mem_writes.add(random.randint(0, 2), {"gen_ai.agent.name": agent_name})
         agent_feedback_count.add(0, {"gen_ai.agent.name": agent_name})
         agent_fallback_triggered.add(0, {"gen_ai.agent.name": agent_name})
         
-        await asyncio.sleep(random.uniform(0.5, 1.0))
+        await asyncio.sleep(random.uniform(0.6, 1.2))
         
-        if is_intake or agent_name == "claim_intake_agent":
-            # Handoff to Policy Verification Agent
-            agent_handoff_counter.add(1, {"gen_ai.agent.name": "claim_intake_agent", "gen_ai.target.agent": "policy_verification_agent"})
-            func_call = types.FunctionCall(
-                name="transfer_to_agent",
-                args={"agent_name": "policy_verification_agent"},
-                id="call_handoff_policy"
-            )
-            part = types.Part(function_call=func_call)
-            content_obj = types.Content(role="model", parts=[part])
-            yield LlmResponse(model_version=active_model_id, content=content_obj, finish_reason=types.FinishReason.STOP, turn_complete=True)
+        if is_triage:
+            if any(k in user_query for k in ["billing", "refund", "charge", "invoice", "cost"]):
+                agent_handoff_counter.add(1, {"gen_ai.agent.name": "triage_agent", "gen_ai.target.agent": "billing_agent"})
+                func_call = types.FunctionCall(
+                    name="transfer_to_agent",
+                    args={"agent_name": "billing_agent"},
+                    id="call_handoff_billing"
+                )
+                part = types.Part(function_call=func_call)
+                content_obj = types.Content(role="model", parts=[part])
+                yield LlmResponse(model_version=active_model_id, content=content_obj, finish_reason=types.FinishReason.STOP, turn_complete=True)
+            elif any(k in user_query for k in ["technical", "status", "restart", "server", "slow", "down", "bug"]):
+                agent_handoff_counter.add(1, {"gen_ai.agent.name": "triage_agent", "gen_ai.target.agent": "technical_agent"})
+                func_call = types.FunctionCall(
+                    name="transfer_to_agent",
+                    args={"agent_name": "technical_agent"},
+                    id="call_handoff_tech"
+                )
+                part = types.Part(function_call=func_call)
+                content_obj = types.Content(role="model", parts=[part])
+                yield LlmResponse(model_version=active_model_id, content=content_obj, finish_reason=types.FinishReason.STOP, turn_complete=True)
+            else:
+                agent_handoff_counter.add(1, {"gen_ai.agent.name": "triage_agent", "gen_ai.target.agent": "support_agent"})
+                func_call = types.FunctionCall(
+                    name="transfer_to_agent",
+                    args={"agent_name": "support_agent"},
+                    id="call_handoff_support"
+                )
+                part = types.Part(function_call=func_call)
+                content_obj = types.Content(role="model", parts=[part])
+                yield LlmResponse(model_version=active_model_id, content=content_obj, finish_reason=types.FinishReason.STOP, turn_complete=True)
+                
+        elif is_support:
+            has_kb_response = False
+            for c in llm_request.contents:
+                if c.parts:
+                    for p in c.parts:
+                        if hasattr(p, "function_response") and p.function_response and getattr(p.function_response, "name", "") == "get_knowledge_base":
+                            has_kb_response = True
+                            break
             
-        elif is_policy:
-            has_policy_res = False
-            for c in llm_request.contents:
-                if c.parts:
-                    for p in c.parts:
-                        if hasattr(p, "function_response") and p.function_response and getattr(p.function_response, "name", "") == "query_bigquery_policy_coverage":
-                            has_policy_res = True
-                            break
-                            
-            if has_policy_res:
-                # Handoff to Fraud Assessment Agent
-                agent_handoff_counter.add(1, {"gen_ai.agent.name": "policy_verification_agent", "gen_ai.target.agent": "fraud_assessment_agent"})
-                func_call = types.FunctionCall(
-                    name="transfer_to_agent",
-                    args={"agent_name": "fraud_assessment_agent"},
-                    id="call_handoff_fraud"
-                )
-                part = types.Part(function_call=func_call)
-                content_obj = types.Content(role="model", parts=[part])
-                yield LlmResponse(model_version=active_model_id, content=content_obj, finish_reason=types.FinishReason.STOP, turn_complete=True)
-            else:
-                target_pol = "POL-33018" if "fraud" in user_query or "fire" in user_query else ("POL-99402" if "medical" in user_query else "POL-88219")
-                func_call = types.FunctionCall(
-                    name="query_bigquery_policy_coverage",
-                    args={"policy_id": target_pol},
-                    id="call_bq_policy"
-                )
-                part = types.Part(function_call=func_call)
-                content_obj = types.Content(role="model", parts=[part])
-                yield LlmResponse(model_version=active_model_id, content=content_obj, finish_reason=types.FinishReason.STOP, turn_complete=True)
-                
-        elif is_fraud:
-            has_fraud_res = False
-            for c in llm_request.contents:
-                if c.parts:
-                    for p in c.parts:
-                        if hasattr(p, "function_response") and p.function_response and getattr(p.function_response, "name", "") == "query_bigquery_fraud_anomalies":
-                            has_fraud_res = True
-                            break
-                            
-            if has_fraud_res:
-                # Handoff to Adjudication Agent
-                agent_handoff_counter.add(1, {"gen_ai.agent.name": "fraud_assessment_agent", "gen_ai.target.agent": "claim_adjudication_agent"})
-                func_call = types.FunctionCall(
-                    name="transfer_to_agent",
-                    args={"agent_name": "claim_adjudication_agent"},
-                    id="call_handoff_adjudicate"
-                )
-                part = types.Part(function_call=func_call)
-                content_obj = types.Content(role="model", parts=[part])
-                yield LlmResponse(model_version=active_model_id, content=content_obj, finish_reason=types.FinishReason.STOP, turn_complete=True)
-            else:
-                target_clm = "CLM-9904" if "fraud" in user_query or "fire" in user_query else "CLM-7701"
-                target_pol = "POL-33018" if "fraud" in user_query or "fire" in user_query else "POL-88219"
-                func_call = types.FunctionCall(
-                    name="query_bigquery_fraud_anomalies",
-                    args={"claim_id": target_clm, "policy_id": target_pol},
-                    id="call_bq_fraud"
-                )
-                part = types.Part(function_call=func_call)
-                content_obj = types.Content(role="model", parts=[part])
-                yield LlmResponse(model_version=active_model_id, content=content_obj, finish_reason=types.FinishReason.STOP, turn_complete=True)
-                
-        elif is_adjudication:
-            has_payout_res = False
-            for c in llm_request.contents:
-                if c.parts:
-                    for p in c.parts:
-                        if hasattr(p, "function_response") and p.function_response and getattr(p.function_response, "name", "") == "calculate_claim_payout":
-                            has_payout_res = True
-                            break
-                            
-            if has_payout_res:
-                summary_text = "Claim Adjudication Expert (Gemini 2.5): Claim POL-88219 evaluated successfully. Policy is active, fraud score is 0.08 (Low), and claim is approved for payout of $3,700.00 after $500.00 deductible."
-                if "fraud" in user_query or "fire" in user_query:
-                    summary_text = "Claim Adjudication Expert (Gemini 2.5): ALERT - Claim CLM-9904 flagged for high fraud risk (0.84 score, suspicious repair shop). Claim processing is PAUSED and routed to Special Investigation Unit (SIU)."
+            if has_kb_response:
                 content_obj = types.Content(
                     role="model",
-                    parts=[types.Part.from_text(text=summary_text)]
+                    parts=[types.Part.from_text(text="General Support Agent (Gemma 2): I've verified our database. The main portal server is operational. You can update your profile details under Account Settings.")]
                 )
                 yield LlmResponse(model_version=active_model_id, content=content_obj, finish_reason=types.FinishReason.STOP, turn_complete=True)
             else:
-                amt = 85000.0 if ("fraud" in user_query or "fire" in user_query) else (12500.0 if "medical" in user_query else 4200.0)
-                pol = "POL-33018" if ("fraud" in user_query or "fire" in user_query) else ("POL-99402" if "medical" in user_query else "POL-88219")
                 func_call = types.FunctionCall(
-                    name="calculate_claim_payout",
-                    args={"claim_amount": amt, "policy_id": pol},
-                    id="call_calc_payout"
+                    name="get_knowledge_base",
+                    args={"topic": "portal settings help"},
+                    id="call_kb_query"
                 )
                 part = types.Part(function_call=func_call)
                 content_obj = types.Content(role="model", parts=[part])
                 yield LlmResponse(model_version=active_model_id, content=content_obj, finish_reason=types.FinishReason.STOP, turn_complete=True)
+                
+        elif is_billing:
+            has_refund_response = False
+            has_billing_status_response = False
+            for c in llm_request.contents:
+                if c.parts:
+                    for p in c.parts:
+                        if hasattr(p, "function_response") and p.function_response:
+                            fname = getattr(p.function_response, "name", "")
+                            if fname == "process_refund":
+                                has_refund_response = True
+                            elif fname == "check_billing_status":
+                                has_billing_status_response = True
+            
+            if has_refund_response:
+                content_obj = types.Content(
+                    role="model",
+                    parts=[types.Part.from_text(text="Billing Specialist (Gemini 2.5): The refund of $49.99 has been approved and processed. Transaction Reference: REF_TX_98122. The funds should show in your account in 3 business days.")]
+                )
+                yield LlmResponse(model_version=active_model_id, content=content_obj, finish_reason=types.FinishReason.STOP, turn_complete=True)
+            elif has_billing_status_response:
+                func_call = types.FunctionCall(
+                    name="process_refund",
+                    args={"user_id": "USR_992", "amount": 49.99},
+                    id="call_refund_proc"
+                )
+                part = types.Part(function_call=func_call)
+                content_obj = types.Content(role="model", parts=[part])
+                yield LlmResponse(model_version=active_model_id, content=content_obj, finish_reason=types.FinishReason.STOP, turn_complete=True)
+            else:
+                func_call = types.FunctionCall(
+                    name="check_billing_status",
+                    args={"user_id": "USR_992"},
+                    id="call_billing_chk"
+                )
+                part = types.Part(function_call=func_call)
+                content_obj = types.Content(role="model", parts=[part])
+                yield LlmResponse(model_version=active_model_id, content=content_obj, finish_reason=types.FinishReason.STOP, turn_complete=True)
+                
+        elif is_technical:
+            has_restart_response = False
+            has_status_response = False
+            for c in llm_request.contents:
+                if c.parts:
+                    for p in c.parts:
+                        if hasattr(p, "function_response") and p.function_response:
+                            fname = getattr(p.function_response, "name", "")
+                            if fname == "restart_service":
+                                has_restart_response = True
+                            elif fname == "check_server_status":
+                                has_status_response = True
+                                
+            if "restart" in user_query or "sluggish" in user_query:
+                if has_restart_response:
+                    content_obj = types.Content(
+                        role="model",
+                        parts=[types.Part.from_text(text="Technical Specialist (Gemini 2.5): The service 'web_server' was restarted successfully. Latency spikes have subsided, and health checks are passing.")]
+                    )
+                    yield LlmResponse(model_version=active_model_id, content=content_obj, finish_reason=types.FinishReason.STOP, turn_complete=True)
+                else:
+                    func_call = types.FunctionCall(
+                        name="restart_service",
+                        args={"service_name": "web_server"},
+                        id="call_svc_restart"
+                    )
+                    part = types.Part(function_call=func_call)
+                    content_obj = types.Content(role="model", parts=[part])
+                    yield LlmResponse(model_version=active_model_id, content=content_obj, finish_reason=types.FinishReason.STOP, turn_complete=True)
+            else:
+                if has_status_response:
+                    content_obj = types.Content(
+                        role="model",
+                        parts=[types.Part.from_text(text="Technical Specialist (Gemini 2.5): The server 'PROD_SVR_01' is fully operational. System health metrics look normal, and free memory is at 38%.")]
+                    )
+                    yield LlmResponse(model_version=active_model_id, content=content_obj, finish_reason=types.FinishReason.STOP, turn_complete=True)
+                else:
+                    func_call = types.FunctionCall(
+                        name="check_server_status",
+                        args={"server_name": "PROD_SVR_01"},
+                        id="call_srv_status_chk"
+                    )
+                    part = types.Part(function_call=func_call)
+                    content_obj = types.Content(role="model", parts=[part])
+                    yield LlmResponse(model_version=active_model_id, content=content_obj, finish_reason=types.FinishReason.STOP, turn_complete=True)
+        else:
+            content_obj = types.Content(
+                role="model",
+                parts=[types.Part.from_text(text="Fallback Agent: Transferring control to general customer support.")]
+            )
+            yield LlmResponse(model_version=active_model_id, content=content_obj, finish_reason=types.FinishReason.STOP, turn_complete=True)
 
 class MockGeminiLlm(BaseLlm):
     def connect(self, llm_request: LlmRequest) -> MockGeminiLlmConnection:
@@ -389,33 +454,33 @@ class MockGeminiLlm(BaseLlm):
 # Register the Mock LLM in the ADK registry
 LLMRegistry.register(MockGeminiLlm)
 
-# 4. Construct the Insurance ADK Multi-Agent System with Multi-Model Routing
-policy_verification_agent = Agent(
-    name="policy_verification_agent",
+# 4. Construct the ADK Multi-Agent System
+support_agent = Agent(
+    name="support_agent",
     model="mock-gemini",
-    instruction="You are policy_verification_agent (Model: Gemma 2 9B). Verify policy coverage limits and deductibles using query_bigquery_policy_coverage.",
-    tools=[query_bigquery_policy_coverage]
+    instruction="You are support_agent (Model: Gemma 2 9B). Answer general customer queries. Always use get_knowledge_base tool to verify info.",
+    tools=[get_knowledge_base]
 )
 
-fraud_assessment_agent = Agent(
-    name="fraud_assessment_agent",
+billing_agent = Agent(
+    name="billing_agent",
     model="mock-gemini",
-    instruction="You are fraud_assessment_agent (Model: Gemini 2.5 Deep Reasoning). Analyze fraud risk indicators using query_bigquery_fraud_anomalies.",
-    tools=[query_bigquery_fraud_anomalies]
+    instruction="You are billing_agent (Model: Gemini 2.5 Deep Reasoning). Handle billing questions. Call check_billing_status and process_refund when appropriate.",
+    tools=[check_billing_status, process_refund]
 )
 
-claim_adjudication_agent = Agent(
-    name="claim_adjudication_agent",
+technical_agent = Agent(
+    name="technical_agent",
     model="mock-gemini",
-    instruction="You are claim_adjudication_agent (Model: Gemini 2.5 Deep Reasoning). Calculate final settlement payout using calculate_claim_payout.",
-    tools=[calculate_claim_payout]
+    instruction="You are technical_agent (Model: Gemini 2.5 Deep Reasoning). Answer technical questions. Call check_server_status or restart_service tools.",
+    tools=[check_server_status, restart_service]
 )
 
-claim_intake_agent = Agent(
-    name="claim_intake_agent",
+triage_agent = Agent(
+    name="triage_agent",
     model="mock-gemini",
-    instruction="You are claim_intake_agent (Model: Gemma 2 9B). Triage incoming claims and transfer control to policy_verification_agent.",
-    sub_agents=[policy_verification_agent, fraud_assessment_agent, claim_adjudication_agent]
+    instruction="You are triage_agent (Model: Gemma 2 9B). Analyze the query and transfer to support_agent, billing_agent, or technical_agent.",
+    sub_agents=[support_agent, billing_agent, technical_agent]
 )
 
 # 5. Helper function to format and serialize ADK Events
@@ -453,7 +518,6 @@ app = FastAPI(title="Google ADK Observability Console")
 
 @app.on_event("startup")
 async def startup_event():
-    # Seed baseline host resource telemetry so dashboard has data on boot
     sys_cpu.record(15.4, {"node": "collector-us-central"})
     sys_ram.record(52.1, {"node": "collector-us-central"})
     sys_disk.record(42.3, {"node": "collector-us-central"})
@@ -461,7 +525,6 @@ async def startup_event():
     sys_net_out.add(2048, {"node": "collector-us-central"})
     sys_active_conns.add(2, {"node": "collector-us-central"})
     
-    # Seed compliance metrics
     cloud_armor_blocked.add(0, {"policy": "default-security-policy"})
     cloud_armor_violations.add(0, {"policy": "default-security-policy"})
     model_armor_prompt_injection.add(0, {"model": "gemini-1.5-pro"})
@@ -477,7 +540,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Serves static frontend files
 app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "..", "frontend")), name="static")
 
 @app.get("/")
@@ -487,29 +549,26 @@ async def root():
 
 # 7. Endpoint: Simulation triggering Server-Sent Events (SSE)
 @app.get("/api/simulate")
-async def simulate(scenario: str = "general"):
-    if scenario in ["auto_claim", "billing"]:
-        query = "I need to file an auto accident claim for $4,200 repair cost under policy POL-88219."
-    elif scenario in ["medical_claim", "support"]:
-        query = "Please process a health insurance claim for $12,500 emergency medical bill under policy POL-99402."
-    elif scenario in ["fraud_claim", "technical"]:
-        query = "Filing a commercial property fire loss claim of $85,000 under policy POL-33018."
+async def simulate(scenario: str = "billing"):
+    if scenario == "billing":
+        query = "My subscription was charged twice. Can you check my status and process a refund of $49.99?"
+    elif scenario == "technical":
+        query = "The main server seems sluggish. Can you check server health and restart the web server?"
+    elif scenario == "support":
+        query = "How do I update my profile details on the user portal?"
     else:
-        query = "I want to submit a new insurance claim for policy POL-88219."
+        query = "Hello, what is this platform?"
 
     async def event_generator():
-        # Setup session in ADK
-        runner = InMemoryRunner(agent=claim_intake_agent)
+        runner = InMemoryRunner(agent=triage_agent)
         session_id = f"sess_{random.randint(1000, 9999)}"
         user_id = "user_demo"
         
-        # OTel Workflow start metrics
         workflow_active.add(1, {"session_id": session_id})
         workflow_success.add(0, {"session_id": session_id})
         workflow_errors.add(0, {"session_id": session_id})
         start_time = time.time()
         
-        # Record host resource telemetry
         sys_cpu.record(random.uniform(10.0, 30.0), {"node": "collector-us-central"})
         sys_ram.record(random.uniform(50.0, 70.0), {"node": "collector-us-central"})
         sys_disk.record(random.uniform(40.0, 45.0), {"node": "collector-us-central"})
@@ -536,12 +595,10 @@ async def simulate(scenario: str = "general"):
             had_error = True
             yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
             
-        # OTel Workflow end metrics
         duration = (time.time() - start_time) * 1000
         workflow_duration.record(duration, {"session_id": session_id})
         workflow_active.add(-1, {"session_id": session_id})
         
-        # Record outcome success/error
         if had_error:
             workflow_errors.add(1, {"session_id": session_id})
         else:
@@ -550,21 +607,20 @@ async def simulate(scenario: str = "general"):
         simulated_context_size = len(query) * 5 + random.randint(150, 400)
         workflow_memory.record(simulated_context_size, {"session_id": session_id})
         workflow_tokens_active.record(int(simulated_context_size / 4), {"session_id": session_id})
-        workflow_turns.add(4, {"session_id": session_id})
-        
-        workflow_handoff_depth.record(3, {"session_id": session_id})
+        workflow_turns.add(4 if scenario in ["billing", "technical"] else 2, {"session_id": session_id})
+        workflow_handoff_depth.record(3 if scenario in ["billing", "technical"] else 2, {"session_id": session_id})
         workflow_concurrency_limit.record(10.0, {"session_id": session_id})
-        tool_timeout_count.add(0, {"gen_ai.agent.name": "claim_intake_agent"})
+        tool_timeout_count.add(0, {"gen_ai.agent.name": "triage_agent"})
         
         sys_net_out.add(random.randint(5000, 10000), {"node": "collector-us-central"})
         sys_active_conns.add(-1, {"node": "collector-us-central"})
         
         cloud_armor_blocked.add(random.choice([0, 0, 0, 1]), {"policy": "default-security-policy"})
-        cloud_armor_violations.add(random.choice([0, 0, 0, 0, 1]) if scenario == "fraud_claim" else 0, {"policy": "default-security-policy"})
-        model_armor_prompt_injection.add(random.choice([0, 0, 0, 1]) if scenario == "fraud_claim" else 0, {"model": "gemini-2.5-flash"})
-        model_armor_jailbreak.add(0, {"model": "gemini-2.5-flash"})
-        model_armor_pii_leak.add(random.choice([0, 0, 1, 0]) if scenario == "auto_claim" else 0, {"model": "gemini-2.5-flash"})
-        model_armor_safety.add(0, {"model": "gemini-2.5-flash"})
+        cloud_armor_violations.add(random.choice([0, 0, 0, 0, 1]) if scenario == "technical" else 0, {"policy": "default-security-policy"})
+        model_armor_prompt_injection.add(random.choice([0, 0, 0, 1]) if scenario == "technical" else 0, {"model": "gemini-1.5-pro"})
+        model_armor_jailbreak.add(0, {"model": "gemini-1.5-pro"})
+        model_armor_pii_leak.add(random.choice([0, 0, 1, 0]) if scenario == "billing" else 0, {"model": "gemini-1.5-pro"})
+        model_armor_safety.add(0, {"model": "gemini-1.5-pro"})
             
         yield f"data: {json.dumps({'type': 'complete'})}\n\n"
 
@@ -574,7 +630,7 @@ async def simulate(scenario: str = "general"):
 @app.get("/api/chat")
 @app.post("/api/chat")
 async def chat(request: Request):
-    query = "I want to file an insurance claim for auto accident loss."
+    query = "Hello, explain how the agent platform observability system works."
     
     if request.method == "POST":
         try:
@@ -588,8 +644,17 @@ async def chat(request: Request):
         if q and q.strip():
             query = q.strip()
 
+    q_lower = query.lower()
+    scenario = "general"
+    if any(k in q_lower for k in ["refund", "billing", "charged", "cost", "invoice", "price"]):
+        scenario = "billing"
+    elif any(k in q_lower for k in ["sluggish", "server", "crash", "bug", "restart", "cpu", "memory"]):
+        scenario = "technical"
+    elif any(k in q_lower for k in ["help", "guide", "portal", "profile", "update", "support"]):
+        scenario = "support"
+
     async def event_generator():
-        runner = InMemoryRunner(agent=claim_intake_agent)
+        runner = InMemoryRunner(agent=triage_agent)
         session_id = f"sess_chat_{random.randint(10000, 99999)}"
         user_id = "live_user"
         
@@ -716,7 +781,6 @@ async def get_metrics():
                     name = metric.name
                     data_points = []
                     for point in metric.data.data_points:
-                        # Filter out data points recorded before the last reset
                         if point.time_unix_nano < metrics_reset_timestamp * 1e9:
                             continue
                             
@@ -748,48 +812,7 @@ async def reset_metrics():
     metrics_reset_timestamp = time.time()
     return {"status": "success", "message": "Metrics reset successfully"}
 
-
 if __name__ == "__main__":
-    import sys
-    if len(sys.argv) > 1 and sys.argv[1] == "--test":
-        print("Backend validation mode: Running agent simulation...")
-        import asyncio
-        async def run_test_sim():
-            runner = InMemoryRunner(agent=triage_agent)
-            session_id = "test_sim_sess"
-            user_id = "test_sim_user"
-            await runner.session_service.create_session(
-                session_id=session_id,
-                user_id=user_id,
-                app_name="InMemoryRunner"
-            )
-            query = "My subscription was charged twice. Can you check my status and process a refund of $49.99?"
-            user_msg = types.Content(parts=[types.Part.from_text(text=query)], role="user")
-            
-            count = 0
-            async for event in runner.run_async(user_id=user_id, session_id=session_id, new_message=user_msg):
-                count += 1
-                print(f"Event {count}: {event.author} -> text: {event.content.parts[0].text if event.content and event.content.parts else ''}")
-            print(f"Simulation completed with {count} events.")
-            
-            # Print metrics
-            print("\nCollected metrics:")
-            metrics_data = metric_reader.get_metrics_data()
-            if not metrics_data or not metrics_data.resource_metrics:
-                print("No metrics collected!")
-            else:
-                for rm in metrics_data.resource_metrics:
-                    for sm in rm.scope_metrics:
-                        print(f"Scope: {sm.scope.name}")
-                        for m in sm.metrics:
-                            print(f"  Metric: {m.name}")
-                            for pt in m.data.data_points:
-                                print(f"    Pt attributes: {pt.attributes}")
-                                print(f"    Pt stats: sum={getattr(pt, 'sum', None)}, count={getattr(pt, 'count', None)}")
-        
-        asyncio.run(run_test_sim())
-        sys.exit(0)
-    
     import uvicorn
     print("Starting server on http://0.0.0.0:8000 ...")
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

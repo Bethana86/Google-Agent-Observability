@@ -1,13 +1,11 @@
-import time
-import random
 from typing import Dict, Any
 
 class MultiModelRouter:
     """Multi-Model Routing Manager.
     
     Routing Strategy:
-    - Routine / Normal Tasks (Intake, Policy Lookup): Routed to Gemma 2 / Gemini 1.5 Flash (fast, lightweight).
-    - Deep Reasoning Tasks (Fraud Detection, Adjudication): Routed to Gemini 2.5 Flash / Pro (high reasoning).
+    - Routine / Normal Tasks (Triage, Support): Routed to Gemma 2 9B / Gemini 1.5 Flash (fast, lightweight).
+    - Deep Reasoning / Action Tasks (Billing Refund, Tech Restart): Routed to Gemini 2.5 Flash / Pro (high reasoning).
     """
     
     def __init__(self):
@@ -30,7 +28,7 @@ class MultiModelRouter:
         
     def get_route_for_agent(self, agent_name: str) -> Dict[str, Any]:
         """Determines model routing metadata based on agent responsibility."""
-        if agent_name in ["claim_intake_agent", "policy_verification_agent"]:
+        if agent_name in ["triage_agent", "support_agent"]:
             route_type = "routine"
         else:
             route_type = "reasoning"

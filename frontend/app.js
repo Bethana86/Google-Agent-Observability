@@ -1,5 +1,5 @@
 // State Variables
-let currentScenario = 'auto_claim';
+let currentScenario = 'billing';
 let sseConnection = null;
 let charts = {};
 
@@ -44,22 +44,24 @@ if (btnThemeToggle) {
 // Nodes for DAG Flow
 const nodes = {
     user: document.getElementById('node-user'),
-    intake: document.getElementById('node-claim_intake_agent'),
-    policy: document.getElementById('node-policy_verification_agent'),
-    fraud: document.getElementById('node-fraud_assessment_agent'),
-    adjudicate: document.getElementById('node-claim_adjudication_agent'),
+    triage: document.getElementById('node-triage_agent'),
+    support: document.getElementById('node-support_agent'),
+    billing: document.getElementById('node-billing_agent'),
+    technical: document.getElementById('node-technical_agent'),
     
     // Tools
-    toolPolicy: document.getElementById('tool-query_bigquery_policy_coverage'),
-    toolFraud: document.getElementById('tool-query_bigquery_fraud_anomalies'),
-    toolPayout: document.getElementById('tool-calculate_claim_payout')
+    kb: document.getElementById('tool-get_knowledge_base'),
+    billingChk: document.getElementById('tool-check_billing_status'),
+    refundProc: document.getElementById('tool-process_refund'),
+    srvStatus: document.getElementById('tool-check_server_status'),
+    svcRestart: document.getElementById('tool-restart_service')
 };
 
 const links = {
     userTriage: document.getElementById('link-user-triage'),
-    intakePolicy: document.getElementById('link-intake-policy'),
-    policyFraud: document.getElementById('link-policy-fraud'),
-    fraudAdjudication: document.getElementById('link-fraud-adjudication')
+    triageSupport: document.getElementById('link-triage-support'),
+    triageBilling: document.getElementById('link-triage-billing'),
+    triageTechnical: document.getElementById('link-triage-technical')
 };
 
 // 1. Initialize Event Listeners
@@ -384,30 +386,30 @@ function handleAgentEvent(event) {
     
     Object.values(nodes).forEach(n => { if (n) n.classList.remove('active-node'); });
     
-    if (author === 'claim_intake_agent') {
-        if (nodes.intake) {
-            nodes.intake.classList.add('active-node');
-            setStatus(nodes.intake, 'Intake Active');
+    if (author === 'triage_agent') {
+        if (nodes.triage) {
+            nodes.triage.classList.add('active-node');
+            setStatus(nodes.triage, 'Active');
         }
         if (links.userTriage) links.userTriage.classList.add('active-trail');
-    } else if (author === 'policy_verification_agent') {
-        if (nodes.policy) {
-            nodes.policy.classList.add('active-node');
-            setStatus(nodes.policy, 'BigQuery Check');
+    } else if (author === 'support_agent') {
+        if (nodes.support) {
+            nodes.support.classList.add('active-node');
+            setStatus(nodes.support, 'Running');
         }
-        if (links.intakePolicy) links.intakePolicy.classList.add('active-trail');
-    } else if (author === 'fraud_assessment_agent') {
-        if (nodes.fraud) {
-            nodes.fraud.classList.add('active-node');
-            setStatus(nodes.fraud, 'Gemini 2.5 ML Fraud');
+        if (links.triageSupport) links.triageSupport.classList.add('active-trail');
+    } else if (author === 'billing_agent') {
+        if (nodes.billing) {
+            nodes.billing.classList.add('active-node');
+            setStatus(nodes.billing, 'Running');
         }
-        if (links.policyFraud) links.policyFraud.classList.add('active-trail');
-    } else if (author === 'claim_adjudication_agent') {
-        if (nodes.adjudicate) {
-            nodes.adjudicate.classList.add('active-node');
-            setStatus(nodes.adjudicate, 'Payout Settlement');
+        if (links.triageBilling) links.triageBilling.classList.add('active-trail');
+    } else if (author === 'technical_agent') {
+        if (nodes.technical) {
+            nodes.technical.classList.add('active-node');
+            setStatus(nodes.technical, 'Running');
         }
-        if (links.fraudAdjudication) links.fraudAdjudication.classList.add('active-trail');
+        if (links.triageTechnical) links.triageTechnical.classList.add('active-trail');
     }
     
     if (type === 'tool_call') {
