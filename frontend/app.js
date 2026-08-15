@@ -147,7 +147,16 @@ const allMetricSignals = {
     'chart-policy-ma-injection': 'status-sig-policy-ma-injection',
     'chart-policy-ma-jailbreak': 'status-sig-policy-ma-jailbreak',
     'chart-policy-ma-pii': 'status-sig-policy-ma-pii',
-    'chart-policy-ma-safety': 'status-sig-policy-ma-safety'
+    'chart-policy-ma-safety': 'status-sig-policy-ma-safety',
+    // TAB 7: FinOps & Tokenomics (8)
+    'chart-finops-model-cost': 'status-sig-finops-model-cost',
+    'chart-finops-cost-turn': 'status-sig-finops-cost-turn',
+    'chart-finops-token-prompt': 'status-sig-finops-token-prompt',
+    'chart-finops-token-completion': 'status-sig-finops-token-completion',
+    'chart-finops-token-total': 'status-sig-finops-token-total',
+    'chart-finops-tokens-active': 'status-sig-finops-tokens-active',
+    'chart-finops-tool-payload': 'status-sig-finops-tool-payload',
+    'chart-finops-cache-savings': 'status-sig-finops-cache-savings'
 };
 
 // Realistic Warning Health Threshold evaluation functions
@@ -218,7 +227,17 @@ const metricThresholds = {
     'chart-policy-ma-injection': (data) => data.reduce((a,b)=>a+b,0) === 0,
     'chart-policy-ma-jailbreak': (data) => data.reduce((a,b)=>a+b,0) === 0,
     'chart-policy-ma-pii': (data) => data.reduce((a,b)=>a+b,0) === 0,
-    'chart-policy-ma-safety': (data) => data.reduce((a,b)=>a+b,0) === 0
+    'chart-policy-ma-safety': (data) => data.reduce((a,b)=>a+b,0) === 0,
+
+    // TAB 7: FINOPS & TOKENOMICS (8)
+    'chart-finops-model-cost': (data) => data.reduce((a,b)=>a+b,0) < 0.20,
+    'chart-finops-cost-turn': (data) => (data.reduce((a,b)=>a+b,0)/(data.filter(v=>v>0).length||1)) < 0.05,
+    'chart-finops-token-prompt': (data) => true,
+    'chart-finops-token-completion': (data) => true,
+    'chart-finops-token-total': (data) => true,
+    'chart-finops-tokens-active': (data) => true,
+    'chart-finops-tool-payload': (data) => true,
+    'chart-finops-cache-savings': (data) => (data.reduce((a,b)=>a+b,0)/(data.filter(v=>v>0).length||1)) >= 20.0
 };
 
 if (btnRunSimulation) btnRunSimulation.addEventListener('click', () => runSimulation());
@@ -525,11 +544,6 @@ async function fetchMetrics() {
         showChartNoData(false);
         renderCharts(data);
     } catch (e) {
-        console.error("Failed to fetch metrics", e);
-        showChartNoData(true);
-    }
-}
-
 function showChartNoData(show) {
     const overlays = [
         'no-data-invocation-duration', 'no-data-request-size', 'no-data-response-size', 'no-data-workflow-steps',
@@ -547,7 +561,10 @@ function showChartNoData(show) {
         'no-data-sys-cpu', 'no-data-sys-ram', 'no-data-sys-disk', 'no-data-sys-net-in',
         'no-data-sys-net-out', 'no-data-sys-active-conns',
         'no-data-policy-ca-blocked', 'no-data-policy-ca-violations', 'no-data-policy-ma-injection',
-        'no-data-policy-ma-jailbreak', 'no-data-policy-ma-pii', 'no-data-policy-ma-safety'
+        'no-data-policy-ma-jailbreak', 'no-data-policy-ma-pii', 'no-data-policy-ma-safety',
+        'no-data-finops-model-cost', 'no-data-finops-cost-turn', 'no-data-finops-token-prompt',
+        'no-data-finops-token-completion', 'no-data-finops-token-total', 'no-data-finops-tokens-active',
+        'no-data-finops-tool-payload', 'no-data-finops-cache-savings'
     ];
     overlays.forEach(id => {
         const el = document.getElementById(id);
@@ -573,360 +590,369 @@ function renderCharts(metricsData) {
     // ----------------------------------------------------
     // TAB 1: AGENT PERFORMANCE (13 Charts & Badges)
     // ----------------------------------------------------
-    const latencyData = metricsData['gen_ai.agent.invocation.duration'] || [];
-    const agentDurations = agentLabels.map(label => {
-        const pt = latencyData.find(d => d.attributes['gen_ai.agent.name'] === label);
-        return pt && pt.count > 0 ? (pt.sum / pt.count) : 0;
-    });
-    updateChart('chart-invocation-duration', createBarChartConfig(agentDisplayLabels, agentDurations, 'Avg Duration (ms)', [triageColor, supportColor, billingColor, techColor]));
-
-    const reqSizeData = metricsData['gen_ai.agent.request.size'] || [];
-    const reqSizes = agentLabels.map(label => {
-        const pt = reqSizeData.find(d => d.attributes['gen_ai.agent.name'] === label);
-        return pt ? pt.sum : 0;
-    });
-    updateChart('chart-request-size', createBarChartConfig(agentDisplayLabels, reqSizes, 'Request Size (Bytes)', triageColor));
-
-    const respSizeData = metricsData['gen_ai.agent.response.size'] || [];
-    const respSizes = agentLabels.map(label => {
-        const pt = respSizeData.find(d => d.attributes['gen_ai.agent.name'] === label);
-        return pt ? pt.sum : 0;
-    });
-    updateChart('chart-response-size', createBarChartConfig(agentDisplayLabels, respSizes, 'Response Size (Bytes)', supportColor));
-
     const stepsData = metricsData['gen_ai.agent.workflow.steps'] || [];
     const steps = agentLabels.map(label => {
         const pt = stepsData.find(d => d.attributes['gen_ai.agent.name'] === label);
         return pt ? pt.sum : 0;
     });
-    updateChart('chart-workflow-steps', createBarChartConfig(agentDisplayLabels, steps, 'Steps Count', billingColor));
+    updateChart('chart-workflow-steps', createBarChartConfig(agentDisplayLabels, steps, 'Total Steps', techColor));
 
-    const agentCallsData = metricsData['gen_ai.agent.calls.count'] || [];
+    const callsData = metricsData['gen_ai.agent.calls.count'] || [];
     const agentCalls = agentLabels.map(label => {
-        const pt = agentCallsData.find(d => d.attributes['gen_ai.agent.name'] === label);
-        return pt ? pt.value : 0;
+        const pts = callsData.filter(d => d.attributes['gen_ai.agent.name'] === label);
+        return pts.reduce((acc, p) => acc + p.value, 0);
     });
-    updateChart('chart-agent-calls', createBarChartConfig(agentDisplayLabels, agentCalls, 'Calls Count', techColor));
+    updateChart('chart-agent-calls', createBarChartConfig(agentDisplayLabels, agentCalls, 'Invocations', [triageColor, supportColor, billingColor, techColor]));
 
-    const agentErrorsData = metricsData['gen_ai.agent.errors.count'] || [];
+    const errorsData = metricsData['gen_ai.agent.errors.count'] || [];
     const agentErrors = agentLabels.map(label => {
-        const pt = agentErrorsData.find(d => d.attributes['gen_ai.agent.name'] === label);
-        return pt ? pt.value : 0;
+        const pts = errorsData.filter(d => d.attributes['gen_ai.agent.name'] === label);
+        return pts.reduce((acc, p) => acc + p.value, 0);
     });
-    updateChart('chart-agent-errors', createBarChartConfig(agentDisplayLabels, agentErrors, 'Error Count', '#ef4444'));
+    updateChart('chart-agent-errors', createBarChartConfig(agentDisplayLabels, agentErrors, 'Errors', '#ef4444'));
 
     const promptTokensData = metricsData['gen_ai.agent.token.prompt'] || [];
     const promptTokens = agentLabels.map(label => {
-        const pt = promptTokensData.find(d => d.attributes['gen_ai.agent.name'] === label);
-        return pt ? pt.value : 0;
+        const pts = promptTokensData.filter(d => d.attributes['gen_ai.agent.name'] === label);
+        return pts.reduce((acc, p) => acc + p.value, 0);
     });
     updateChart('chart-token-prompt', createBarChartConfig(agentDisplayLabels, promptTokens, 'Prompt Tokens', triageColor));
 
     const compTokensData = metricsData['gen_ai.agent.token.completion'] || [];
     const compTokens = agentLabels.map(label => {
-        const pt = compTokensData.find(d => d.attributes['gen_ai.agent.name'] === label);
-        return pt ? pt.value : 0;
+        const pts = compTokensData.filter(d => d.attributes['gen_ai.agent.name'] === label);
+        return pts.reduce((acc, p) => acc + p.value, 0);
     });
     updateChart('chart-token-completion', createBarChartConfig(agentDisplayLabels, compTokens, 'Completion Tokens', supportColor));
 
     const totalTokensData = metricsData['gen_ai.agent.token.total'] || [];
     const totalTokens = agentLabels.map(label => {
-        const pt = totalTokensData.find(d => d.attributes['gen_ai.agent.name'] === label);
-        return pt ? pt.value : 0;
+        const pts = totalTokensData.filter(d => d.attributes['gen_ai.agent.name'] === label);
+        return pts.reduce((acc, p) => acc + p.value, 0);
     });
     updateChart('chart-token-total', createBarChartConfig(agentDisplayLabels, totalTokens, 'Total Tokens', billingColor));
 
     const costData = metricsData['gen_ai.agent.cost'] || [];
-    const costs = agentLabels.map(label => {
+    const agentCosts = agentLabels.map(label => {
         const pt = costData.find(d => d.attributes['gen_ai.agent.name'] === label);
         return pt ? pt.sum : 0;
     });
-    updateChart('chart-agent-cost', createBarChartConfig(agentDisplayLabels, costs, 'Estimated Cost ($)', techColor));
+    updateChart('chart-agent-cost', createBarChartConfig(agentDisplayLabels, agentCosts, 'Est Cost ($)', techColor));
 
-    const retryData = metricsData['gen_ai.agent.retry.count'] || [];
-    const retries = agentLabels.map(label => {
-        const pt = retryData.find(d => d.attributes['gen_ai.agent.name'] === label);
-        return pt ? pt.value : 0;
+    const retriesData = metricsData['gen_ai.agent.retry.count'] || [];
+    const agentRetries = agentLabels.map(label => {
+        const pts = retriesData.filter(d => d.attributes['gen_ai.agent.name'] === label);
+        return pts.reduce((acc, p) => acc + p.value, 0);
     });
-    updateChart('chart-agent-retry', createBarChartConfig(agentDisplayLabels, retries, 'Retry Attempts', triageColor));
+    updateChart('chart-agent-retry', createBarChartConfig(agentDisplayLabels, agentRetries, 'Retries', toolColor));
 
     const overheadData = metricsData['gen_ai.agent.latency.overhead'] || [];
-    const overheads = agentLabels.map(label => {
+    const agentOverhead = agentLabels.map(label => {
         const pt = overheadData.find(d => d.attributes['gen_ai.agent.name'] === label);
         return pt && pt.count > 0 ? (pt.sum / pt.count) : 0;
     });
-    updateChart('chart-agent-overhead', createBarChartConfig(agentDisplayLabels, overheads, 'Overhead (ms)', techColor));
+    updateChart('chart-agent-overhead', createBarChartConfig(agentDisplayLabels, agentOverhead, 'Overhead (ms)', triageColor));
 
-    const handoffData = metricsData['gen_ai.agent.handoff.count'] || [];
-    const handoffs = agentLabels.map(label => {
-        const pt = handoffData.find(d => d.attributes['gen_ai.agent.name'] === label);
-        return pt ? pt.value : 0;
+    const handoffsData = metricsData['gen_ai.agent.handoff.count'] || [];
+    const agentHandoffs = agentLabels.map(label => {
+        const pts = handoffsData.filter(d => d.attributes['gen_ai.agent.name'] === label);
+        return pts.reduce((acc, p) => acc + p.value, 0);
     });
-    updateChart('chart-agent-handoffs', createBarChartConfig(agentDisplayLabels, handoffs, 'Handoffs Count', billingColor));
+    updateChart('chart-agent-handoffs', createBarChartConfig(agentDisplayLabels, agentHandoffs, 'Handoffs', supportColor));
 
-    const reasoningDriftData = metricsData['gen_ai.agent.reasoning.drift'] || [];
-    const drifts = agentLabels.map(label => {
-        const pt = reasoningDriftData.find(d => d.attributes['gen_ai.agent.name'] === label);
+    const driftData = metricsData['gen_ai.agent.reasoning.drift'] || [];
+    const agentDrift = agentLabels.map(label => {
+        const pt = driftData.find(d => d.attributes['gen_ai.agent.name'] === label);
         return pt && pt.count > 0 ? (pt.sum / pt.count) : 0;
     });
-    updateChart('chart-agent-reasoning-drift', createBarChartConfig(agentDisplayLabels, drifts, 'Avg Drift Score', triageColor));
+    updateChart('chart-agent-reasoning-drift', createBarChartConfig(agentDisplayLabels, agentDrift, 'Reasoning Drift', billingColor));
 
     const rcaDepthData = metricsData['gen_ai.agent.root_cause.depth'] || [];
-    const rcaDepths = agentLabels.map(label => {
+    const agentRcaDepth = agentLabels.map(label => {
         const pt = rcaDepthData.find(d => d.attributes['gen_ai.agent.name'] === label);
         return pt && pt.count > 0 ? (pt.sum / pt.count) : 0;
     });
-    updateChart('chart-agent-rca-depth', createBarChartConfig(agentDisplayLabels, rcaDepths, 'Avg RCA Depth', supportColor));
+    updateChart('chart-agent-rca-depth', createBarChartConfig(agentDisplayLabels, agentRcaDepth, 'RCA Depth', techColor));
 
-    const rcaConfidenceData = metricsData['gen_ai.agent.root_cause.confidence'] || [];
-    const rcaConfidences = agentLabels.map(label => {
-        const pt = rcaConfidenceData.find(d => d.attributes['gen_ai.agent.name'] === label);
+    const rcaConfData = metricsData['gen_ai.agent.root_cause.confidence'] || [];
+    const agentRcaConf = agentLabels.map(label => {
+        const pt = rcaConfData.find(d => d.attributes['gen_ai.agent.name'] === label);
         return pt && pt.count > 0 ? (pt.sum / pt.count) : 0;
     });
-    updateChart('chart-agent-rca-confidence', createBarChartConfig(agentDisplayLabels, rcaConfidences, 'Avg RCA Conf %', billingColor));
+    updateChart('chart-agent-rca-confidence', createBarChartConfig(agentDisplayLabels, agentRcaConf, 'RCA Conf (%)', toolColor));
 
     const memReadsData = metricsData['gen_ai.agent.memory.reads'] || [];
-    const memReads = agentLabels.map(label => {
-        const pt = memReadsData.find(d => d.attributes['gen_ai.agent.name'] === label);
-        return pt ? pt.value : 0;
+    const agentMemReads = agentLabels.map(label => {
+        const pts = memReadsData.filter(d => d.attributes['gen_ai.agent.name'] === label);
+        return pts.reduce((acc, p) => acc + p.value, 0);
     });
-    updateChart('chart-agent-mem-reads', createBarChartConfig(agentDisplayLabels, memReads, 'Memory Reads', techColor));
+    updateChart('chart-agent-mem-reads', createBarChartConfig(agentDisplayLabels, agentMemReads, 'Mem Reads', triageColor));
 
     const memWritesData = metricsData['gen_ai.agent.memory.writes'] || [];
-    const memWrites = agentLabels.map(label => {
-        const pt = memWritesData.find(d => d.attributes['gen_ai.agent.name'] === label);
-        return pt ? pt.value : 0;
+    const agentMemWrites = agentLabels.map(label => {
+        const pts = memWritesData.filter(d => d.attributes['gen_ai.agent.name'] === label);
+        return pts.reduce((acc, p) => acc + p.value, 0);
     });
-    updateChart('chart-agent-mem-writes', createBarChartConfig(agentDisplayLabels, memWrites, 'Memory Writes', triageColor));
+    updateChart('chart-agent-mem-writes', createBarChartConfig(agentDisplayLabels, agentMemWrites, 'Mem Writes', supportColor));
 
     const feedbackData = metricsData['gen_ai.agent.feedback.count'] || [];
-    const feedbacks = agentLabels.map(label => {
-        const pt = feedbackData.find(d => d.attributes['gen_ai.agent.name'] === label);
-        return pt ? pt.value : 0;
+    const agentFeedback = agentLabels.map(label => {
+        const pts = feedbackData.filter(d => d.attributes['gen_ai.agent.name'] === label);
+        return pts.reduce((acc, p) => acc + p.value, 0);
     });
-    updateChart('chart-agent-feedback', createBarChartConfig(agentDisplayLabels, feedbacks, 'Feedback Counts', supportColor));
+    updateChart('chart-agent-feedback', createBarChartConfig(agentDisplayLabels, agentFeedback, 'Feedback', billingColor));
 
     const fallbackData = metricsData['gen_ai.agent.fallback.triggered'] || [];
-    const fallbacks = agentLabels.map(label => {
-        const pt = fallbackData.find(d => d.attributes['gen_ai.agent.name'] === label);
-        return pt ? pt.value : 0;
+    const agentFallback = agentLabels.map(label => {
+        const pts = fallbackData.filter(d => d.attributes['gen_ai.agent.name'] === label);
+        return pts.reduce((acc, p) => acc + p.value, 0);
     });
-    updateChart('chart-agent-fallback', createBarChartConfig(agentDisplayLabels, fallbacks, 'Fallback Triggers', billingColor));
+    updateChart('chart-agent-fallback', createBarChartConfig(agentDisplayLabels, agentFallback, 'Fallbacks', techColor));
 
     // Update Tab 1 Summary Stats
-    const totalCallsCount = agentCalls.reduce((a, b) => a + b, 0);
-    const totalTokensCount = totalTokens.reduce((a, b) => a + b, 0);
-    const totalEstimatedCost = costs.reduce((a, b) => a + b, 0);
-    const avgOverheadLatency = overheads.reduce((a, b) => a + b, 0) / (overheads.filter(v => v > 0).length || 1);
+    const sumCalls = agentCalls.reduce((a, b) => a + b, 0);
+    const sumTokens = totalTokens.reduce((a, b) => a + b, 0);
+    const sumCost = agentCosts.reduce((a, b) => a + b, 0);
+    const avgOverheadVal = agentOverhead.reduce((a, b) => a + b, 0) / (agentOverhead.filter(v => v > 0).length || 1);
 
-    document.getElementById('stat-agent-calls').textContent = totalCallsCount;
-    document.getElementById('stat-agent-tokens').textContent = totalTokensCount.toLocaleString();
-    document.getElementById('stat-agent-cost').textContent = '$' + totalEstimatedCost.toFixed(4);
-    document.getElementById('stat-agent-overhead').textContent = avgOverheadLatency.toFixed(1) + ' ms';
+    document.getElementById('stat-agent-calls').textContent = sumCalls;
+    document.getElementById('stat-agent-tokens').textContent = sumTokens.toLocaleString();
+    document.getElementById('stat-agent-cost').textContent = '$' + sumCost.toFixed(4);
+    document.getElementById('stat-agent-overhead').textContent = avgOverheadVal.toFixed(1) + ' ms';
 
     // ----------------------------------------------------
-    // TAB 2: TOOL DIAGNOSTICS (7 Charts & Badges)
+    // TAB 2: TOOL DIAGNOSTICS (8 Charts & Badges)
     // ----------------------------------------------------
-    const toolDurationsData = metricsData['gen_ai.tool.execution.duration'] || [];
+    const toolDurData = metricsData['gen_ai.tool.execution.duration'] || [];
     const toolDurations = toolLabels.map(label => {
-        const pt = toolDurationsData.find(d => d.attributes['gen_ai.tool.name'] === label);
+        const pt = toolDurData.find(d => d.attributes['gen_ai.tool.name'] === label);
         return pt && pt.count > 0 ? (pt.sum / pt.count) : 0;
     });
-    updateChart('chart-tool-duration', createBarChartConfig(toolDisplayLabels, toolDurations, 'Avg Duration (ms)', toolColor, true));
+    updateChart('chart-tool-duration', createBarChartConfig(toolDisplayLabels, toolDurations, 'Avg Duration (ms)', toolColor));
 
     const toolCallsData = metricsData['gen_ai.tool.calls.count'] || [];
     const toolCalls = toolLabels.map(label => {
-        const pt = toolCallsData.find(d => d.attributes['gen_ai.tool.name'] === label);
-        return pt ? pt.value : 0;
+        const pts = toolCallsData.filter(d => d.attributes['gen_ai.tool.name'] === label);
+        return pts.reduce((acc, p) => acc + p.value, 0);
     });
-    updateChart('chart-tool-calls', createBarChartConfig(toolDisplayLabels, toolCalls, 'Calls Count', toolColor));
+    updateChart('chart-tool-calls', createBarChartConfig(toolDisplayLabels, toolCalls, 'Calls Count', triageColor));
 
     const toolErrorsData = metricsData['gen_ai.tool.errors.count'] || [];
     const toolErrors = toolLabels.map(label => {
-        const pt = toolErrorsData.find(d => d.attributes['gen_ai.tool.name'] === label);
-        return pt ? pt.value : 0;
+        const pts = toolErrorsData.filter(d => d.attributes['gen_ai.tool.name'] === label);
+        return pts.reduce((acc, p) => acc + p.value, 0);
     });
-    updateChart('chart-tool-errors', createBarChartConfig(toolDisplayLabels, toolErrors, 'Failures Count', '#ef4444'));
+    updateChart('chart-tool-errors', createBarChartConfig(toolDisplayLabels, toolErrors, 'Failures', '#ef4444'));
 
-    const toolCacheData = metricsData['gen_ai.tool.cache.hit'] || [];
-    const toolCacheHits = toolLabels.map(label => {
-        const pt = toolCacheData.find(d => d.attributes['gen_ai.tool.name'] === label);
-        return pt ? pt.value : 0;
+    const toolHitsData = metricsData['gen_ai.tool.cache.hit'] || [];
+    const toolHits = toolLabels.map(label => {
+        const pts = toolHitsData.filter(d => d.attributes['gen_ai.tool.name'] === label);
+        return pts.reduce((acc, p) => acc + p.value, 0);
     });
-    updateChart('chart-tool-cache-hit', createBarChartConfig(toolDisplayLabels, toolCacheHits, 'Cache Hits', '#10b981'));
+    updateChart('chart-tool-cache-hit', createBarChartConfig(toolDisplayLabels, toolHits, 'Cache Hits', supportColor));
 
-    const toolCacheMissData = metricsData['gen_ai.tool.cache.miss'] || [];
-    const toolCacheMisses = toolLabels.map(label => {
-        const pt = toolCacheMissData.find(d => d.attributes['gen_ai.tool.name'] === label);
-        return pt ? pt.value : 0;
+    const toolMissesData = metricsData['gen_ai.tool.cache.miss'] || [];
+    const toolMisses = toolLabels.map(label => {
+        const pts = toolMissesData.filter(d => d.attributes['gen_ai.tool.name'] === label);
+        return pts.reduce((acc, p) => acc + p.value, 0);
     });
-    updateChart('chart-tool-cache-miss', createBarChartConfig(toolDisplayLabels, toolCacheMisses, 'Cache Misses', '#f59e0b'));
+    updateChart('chart-tool-cache-miss', createBarChartConfig(toolDisplayLabels, toolMisses, 'Cache Misses', techColor));
 
     const toolPayloadData = metricsData['gen_ai.tool.payload.size'] || [];
     const toolPayloads = toolLabels.map(label => {
         const pt = toolPayloadData.find(d => d.attributes['gen_ai.tool.name'] === label);
         return pt ? pt.sum : 0;
     });
-    updateChart('chart-tool-payload', createBarChartConfig(toolDisplayLabels, toolPayloads, 'Payload (Bytes)', triageColor));
+    updateChart('chart-tool-payload', createBarChartConfig(toolDisplayLabels, toolPayloads, 'Payload (Bytes)', billingColor));
 
-    const toolConcurrencyData = metricsData['gen_ai.tool.concurrency'] || [];
-    const toolConcurrencies = toolLabels.map(label => {
-        const pt = toolConcurrencyData.find(d => d.attributes['gen_ai.tool.name'] === label);
-        return pt ? Math.max(pt.value, 0) : 0;
+    const toolConcData = metricsData['gen_ai.tool.concurrency'] || [];
+    const toolConcs = toolLabels.map(label => {
+        const pt = toolConcData.find(d => d.attributes['gen_ai.tool.name'] === label);
+        return pt ? pt.value : 0;
     });
-    updateChart('chart-tool-concurrency', createBarChartConfig(toolDisplayLabels, toolConcurrencies, 'Concurrency', techColor));
+    updateChart('chart-tool-concurrency', createBarChartConfig(toolDisplayLabels, toolConcs, 'Active Conc', triageColor));
 
     const toolTimeoutData = metricsData['gen_ai.tool.timeout.count'] || [];
     const toolTimeouts = toolLabels.map(label => {
-        const pt = toolTimeoutData.find(d => d.attributes['gen_ai.agent.name'] === label || d.attributes['gen_ai.tool.name'] === label);
-        return pt ? pt.value : 0;
+        const pts = toolTimeoutData.filter(d => d.attributes['gen_ai.tool.name'] === label);
+        return pts.reduce((acc, p) => acc + p.value, 0);
     });
-    updateChart('chart-tool-timeout', createBarChartConfig(toolDisplayLabels, toolTimeouts, 'Timeouts Count', '#ef4444'));
+    updateChart('chart-tool-timeout', createBarChartConfig(toolDisplayLabels, toolTimeouts, 'Timeouts', '#ef4444'));
 
     // Update Tab 2 Summary Stats
-    const totalToolsCount = toolCalls.reduce((a, b) => a + b, 0);
-    const totalToolErrorsCount = toolErrors.reduce((a, b) => a + b, 0);
-    const totalHits = toolCacheHits.reduce((a, b) => a + b, 0);
-    const totalMisses = toolCacheMisses.reduce((a, b) => a + b, 0);
-    const cacheHitRate = (totalHits + totalMisses) > 0 ? (totalHits / (totalHits + totalMisses) * 100) : 0;
-    const maxToolConcurrency = Math.max(...toolConcurrencies, 0);
+    const sumToolCalls = toolCalls.reduce((a, b) => a + b, 0);
+    const sumToolHits = toolHits.reduce((a, b) => a + b, 0);
+    const sumToolMisses = toolMisses.reduce((a, b) => a + b, 0);
+    const cacheHitRate = (sumToolHits + sumToolMisses) > 0 ? ((sumToolHits / (sumToolHits + sumToolMisses)) * 100) : 0;
+    const avgToolDurVal = toolDurations.reduce((a, b) => a + b, 0) / (toolDurations.filter(v => v > 0).length || 1);
 
-    document.getElementById('stat-tool-calls').textContent = totalToolsCount;
-    document.getElementById('stat-tool-errors').textContent = totalToolErrorsCount;
+    document.getElementById('stat-tool-calls').textContent = sumToolCalls;
     document.getElementById('stat-tool-hitrate').textContent = cacheHitRate.toFixed(1) + '%';
-    document.getElementById('stat-tool-concurrency').textContent = maxToolConcurrency;
+    document.getElementById('stat-tool-errors').textContent = toolErrors.reduce((a, b) => a + b, 0);
+    document.getElementById('stat-tool-duration').textContent = avgToolDurVal.toFixed(0) + ' ms';
 
     // ----------------------------------------------------
-    // TAB 3: SESSION & WORKFLOW (8 Charts & Badges)
+    // TAB 3: SESSION & WORKFLOW (10 Charts & Badges)
     // ----------------------------------------------------
     const wfDurationData = metricsData['gen_ai.workflow.duration'] || [];
-    const wfSessionLabels = wfDurationData.map((pt, i) => `Session #${i+1}`);
     const wfDurations = wfDurationData.map(pt => pt.sum);
-    updateChart('chart-workflow-duration', createLineChartConfig(wfSessionLabels, wfDurations, 'Session Duration (ms)', triageColor));
+    const wfLabels = wfDurations.map((_, i) => `Sess #${i+1}`);
+    updateChart('chart-workflow-duration', createLineChartConfig(wfLabels, wfDurations, 'Duration (ms)', techColor));
 
-    const activeData = metricsData['gen_ai.workflow.active_agents'] || metricsData['workflow_active'] || [];
-    const activeSessionLabels = activeData.map((pt, i) => `Tick #${i+1}`);
-    const activeCounts = activeData.map(pt => pt.value);
-    updateChart('chart-workflow-active', createLineChartConfig(activeSessionLabels, activeCounts, 'Active Agents', supportColor));
+    const wfActiveData = metricsData['gen_ai.workflow.active_agents'] || [];
+    const wfActive = wfActiveData.map(pt => pt.value);
+    const wfActiveLabels = wfActive.map((_, i) => `Tick #${i+1}`);
+    updateChart('chart-workflow-active', createLineChartConfig(wfActiveLabels, wfActive, 'Active Agents', triageColor));
 
-    const wfMemData = metricsData['gen_ai.workflow.memory.usage'] || [];
-    const wfMemSessionLabels = wfMemData.map((pt, i) => `Session #${i+1}`);
-    const wfMemSizes = wfMemData.map(pt => pt.sum);
-    updateChart('chart-workflow-memory', createLineChartConfig(wfMemSessionLabels, wfMemSizes, 'Memory Size (chars)', billingColor));
+    const wfMemoryData = metricsData['gen_ai.workflow.memory.usage'] || [];
+    const wfMemories = wfMemoryData.map(pt => pt.sum);
+    const wfMemLabels = wfMemories.map((_, i) => `Sess #${i+1}`);
+    updateChart('chart-workflow-memory', createLineChartConfig(wfMemLabels, wfMemories, 'Context (Chars)', billingColor));
 
-    const wfTokenData = metricsData['gen_ai.workflow.tokens.active'] || [];
-    const wfTokenSessionLabels = wfTokenData.map((pt, i) => `Session #${i+1}`);
-    const wfTokenCounts = wfTokenData.map(pt => pt.sum);
-    updateChart('chart-workflow-tokens', createLineChartConfig(wfTokenSessionLabels, wfTokenCounts, 'Context Tokens', techColor));
+    const wfTokensData = metricsData['gen_ai.workflow.tokens.active'] || [];
+    const wfTokens = wfTokensData.map(pt => pt.sum);
+    const wfTokenLabels = wfTokens.map((_, i) => `Sess #${i+1}`);
+    updateChart('chart-workflow-tokens', createLineChartConfig(wfTokenLabels, wfTokens, 'Active Tokens', supportColor));
 
     const wfTurnsData = metricsData['gen_ai.workflow.turns.count'] || [];
-    const wfTurnsSessionLabels = wfTurnsData.map((pt, i) => `Session #${i+1}`);
-    const wfTurnsCounts = wfTurnsData.map(pt => pt.value);
-    updateChart('chart-workflow-turns', createLineChartConfig(wfTurnsSessionLabels, wfTurnsCounts, 'Turns Count', triageColor));
+    const wfTurns = wfTurnsData.map(pt => pt.value);
+    const wfTurnLabels = wfTurns.map((_, i) => `Sess #${i+1}`);
+    updateChart('chart-workflow-turns', createLineChartConfig(wfTurnLabels, wfTurns, 'Turns Count', toolColor));
 
     const wfSuccessData = metricsData['gen_ai.workflow.success.count'] || [];
-    const wfSuccessSessionLabels = wfSuccessData.map((pt, i) => `Session #${i+1}`);
-    const wfSuccessCounts = wfSuccessData.map(pt => pt.value);
-    updateChart('chart-workflow-run-success', createLineChartConfig(wfSuccessSessionLabels, wfSuccessCounts, 'Successes', '#10b981'));
+    const wfSuccesses = wfSuccessData.map(pt => pt.value);
+    const wfSuccessLabels = wfSuccesses.map((_, i) => `Sess #${i+1}`);
+    updateChart('chart-workflow-run-success', createLineChartConfig(wfSuccessLabels, wfSuccesses, 'Successes', supportColor));
 
     const wfErrorData = metricsData['gen_ai.workflow.errors.count'] || [];
-    const wfErrorSessionLabels = wfErrorData.map((pt, i) => `Session #${i+1}`);
-    const wfErrorCounts = wfErrorData.map(pt => pt.value);
-    updateChart('chart-workflow-run-error', createLineChartConfig(wfErrorSessionLabels, wfErrorCounts, 'Failures', '#ef4444'));
+    const wfErrors = wfErrorData.map(pt => pt.value);
+    const wfErrorLabels = wfErrors.map((_, i) => `Sess #${i+1}`);
+    updateChart('chart-workflow-run-error', createLineChartConfig(wfErrorLabels, wfErrors, 'Errors', '#ef4444'));
 
-    const wfDelayData = metricsData['gen_ai.workflow.queue.delay'] || [];
-    const wfDelaySessionLabels = wfDelayData.map((pt, i) => `Session #${i+1}`);
-    const wfDelayCounts = wfDelayData.map(pt => pt.sum);
-    updateChart('chart-workflow-queue-delay', createLineChartConfig(wfDelaySessionLabels, wfDelayCounts, 'Queue Delay (ms)', billingColor));
+    const wfQueueDelayData = metricsData['gen_ai.workflow.queue.delay'] || [];
+    const wfQueueDelays = wfQueueDelayData.map(pt => pt.sum);
+    const wfQueueLabels = wfQueueDelays.map((_, i) => `Sess #${i+1}`);
+    updateChart('chart-workflow-queue-delay', createLineChartConfig(wfQueueLabels, wfQueueDelays, 'Queue Delay (ms)', triageColor));
 
     const wfHandoffDepthData = metricsData['gen_ai.workflow.handoff.depth'] || [];
-    const wfHandoffSessionLabels = wfHandoffDepthData.map((pt, i) => `Session #${i+1}`);
-    const wfHandoffDepths = wfHandoffDepthData.map(pt => pt.sum / (pt.count || 1));
-    updateChart('chart-workflow-handoff-depth', createLineChartConfig(wfHandoffSessionLabels, wfHandoffDepths, 'Handoff Depth', triageColor));
+    const wfHandoffDepths = wfHandoffDepthData.map(pt => pt.sum);
+    const wfHandoffLabels = wfHandoffDepths.map((_, i) => `Sess #${i+1}`);
+    updateChart('chart-workflow-handoff-depth', createLineChartConfig(wfHandoffLabels, wfHandoffDepths, 'Handoff Depth', billingColor));
 
-    const wfConcurrencyLimitData = metricsData['gen_ai.workflow.concurrency.limit'] || [];
-    const wfConcurrencySessionLabels = wfConcurrencyLimitData.map((pt, i) => `Session #${i+1}`);
-    const wfConcurrencyLimits = wfConcurrencyLimitData.map(pt => pt.sum / (pt.count || 1));
-    updateChart('chart-workflow-concurrency-limit', createLineChartConfig(wfConcurrencySessionLabels, wfConcurrencyLimits, 'Concurrency Limit', supportColor));
+    const wfConcLimitData = metricsData['gen_ai.workflow.concurrency.limit'] || [];
+    const wfConcLimits = wfConcLimitData.map(pt => pt.sum);
+    const wfConcLabels = wfConcLimits.map((_, i) => `Sess #${i+1}`);
+    updateChart('chart-workflow-concurrency-limit', createLineChartConfig(wfConcLabels, wfConcLimits, 'Limit', techColor));
 
     // Update Tab 3 Summary Stats
-    const totalWfRuns = wfDurations.length;
-    const successRuns = wfSuccessCounts.reduce((a, b) => a + b, 0);
-    const errorRuns = wfErrorCounts.reduce((a, b) => a + b, 0);
-    const successRate = (successRuns + errorRuns) > 0 ? (successRuns / (successRuns + errorRuns) * 100) : 100;
-    const avgWfTime = wfDurations.reduce((a, b) => a + b, 0) / (totalWfRuns || 1) / 1000;
-    const avgWfTurns = wfTurnsCounts.reduce((a, b) => a + b, 0) / (totalWfRuns || 1);
+    const totalSessions = wfDurations.length;
+    const avgWfDurationVal = wfDurations.reduce((a, b) => a + b, 0) / (totalSessions || 1);
+    const totalWfSuccesses = wfSuccesses.reduce((a, b) => a + b, 0);
+    const totalWfErrors = wfErrors.reduce((a, b) => a + b, 0);
+    const wfSuccessRate = (totalWfSuccesses + totalWfErrors) > 0 ? ((totalWfSuccesses / (totalWfSuccesses + totalWfErrors)) * 100) : 100;
+    const currentActiveAgents = wfActive.length > 0 ? wfActive[wfActive.length - 1] : 0;
 
-    document.getElementById('stat-wf-runs').textContent = totalWfRuns;
-    document.getElementById('stat-wf-success').textContent = successRate.toFixed(0) + '%';
-    document.getElementById('stat-wf-time').textContent = avgWfTime.toFixed(1) + 's';
-    document.getElementById('stat-wf-turns').textContent = avgWfTurns.toFixed(1);
+    document.getElementById('stat-workflow-sessions').textContent = totalSessions;
+    document.getElementById('stat-workflow-duration').textContent = (avgWfDurationVal / 1000).toFixed(2) + 's';
+    document.getElementById('stat-workflow-success').textContent = wfSuccessRate.toFixed(1) + '%';
+    document.getElementById('stat-workflow-active').textContent = currentActiveAgents;
+
+    // Update Header SLO / KPI Cards
+    const kpiSuccessEl = document.getElementById('kpi-success-rate');
+    const kpiSuccessFill = document.getElementById('kpi-success-fill');
+    if (kpiSuccessEl && kpiSuccessFill) {
+        kpiSuccessEl.textContent = wfSuccessRate.toFixed(1) + '%';
+        kpiSuccessFill.style.width = Math.min(100, wfSuccessRate) + '%';
+    }
+
+    const kpiLatencyEl = document.getElementById('kpi-latency-val');
+    const kpiLatencyFill = document.getElementById('kpi-latency-fill');
+    if (kpiLatencyEl && kpiLatencyFill) {
+        kpiLatencyEl.textContent = (avgWfDurationVal).toFixed(0) + ' ms';
+        const latPercent = Math.max(0, Math.min(100, 100 - (avgWfDurationVal / 5000 * 100)));
+        kpiLatencyFill.style.width = latPercent + '%';
+    }
 
     // ----------------------------------------------------
     // TAB 4: MODEL ENGINE (6 Charts & Badges)
     // ----------------------------------------------------
     const modelLatencyData = metricsData['gen_ai.model.response.latency'] || [];
-    const modelLatencySessionLabels = modelLatencyData.map((pt, i) => `Model #${i+1}`);
-    const modelLatencies = modelLatencyData.map(pt => pt.sum / (pt.count || 1));
-    updateChart('chart-model-latency', createLineChartConfig(modelLatencySessionLabels, modelLatencies, 'Latency (ms)', triageColor));
+    const modelLatencies = agentLabels.map(label => {
+        const pt = modelLatencyData.find(d => d.attributes['gen_ai.agent.name'] === label);
+        return pt && pt.count > 0 ? (pt.sum / pt.count) : 0;
+    });
+    updateChart('chart-model-latency', createBarChartConfig(agentDisplayLabels, modelLatencies, 'Model Latency (ms)', techColor));
 
     const modelChunksData = metricsData['gen_ai.model.stream.chunk.count'] || [];
-    const modelChunksSessionLabels = modelChunksData.map((pt, i) => `Model #${i+1}`);
-    const modelChunksCount = modelChunksData.map(pt => pt.value);
-    updateChart('chart-model-chunks', createLineChartConfig(modelChunksSessionLabels, modelChunksCount, 'Chunks count', supportColor));
+    const modelChunks = agentLabels.map(label => {
+        const pts = modelChunksData.filter(d => d.attributes['gen_ai.agent.name'] === label);
+        return pts.reduce((acc, p) => acc + p.value, 0);
+    });
+    updateChart('chart-model-chunks', createBarChartConfig(agentDisplayLabels, modelChunks, 'Stream Chunks', triageColor));
 
-    const modelChunkLatencyData = metricsData['gen_ai.model.stream.chunk.latency'] || [];
-    const modelChunkLatencySessionLabels = modelChunkLatencyData.map((pt, i) => `Model #${i+1}`);
-    const modelChunkLatencies = modelChunkLatencyData.map(pt => pt.sum / (pt.count || 1));
-    updateChart('chart-model-chunk-latency', createLineChartConfig(modelChunkLatencySessionLabels, modelChunkLatencies, 'Chunk Delay (ms)', billingColor));
+    const modelChunkLatData = metricsData['gen_ai.model.stream.chunk.latency'] || [];
+    const modelChunkLats = agentLabels.map(label => {
+        const pt = modelChunkLatData.find(d => d.attributes['gen_ai.agent.name'] === label);
+        return pt && pt.count > 0 ? (pt.sum / pt.count) : 0;
+    });
+    updateChart('chart-model-chunk-latency', createBarChartConfig(agentDisplayLabels, modelChunkLats, 'Chunk Latency (ms)', supportColor));
 
-    const modelTempData = metricsData['gen_ai.model.temperature'] || [];
-    const modelTempSessionLabels = modelTempData.map((pt, i) => `Model #${i+1}`);
-    const modelTemps = modelTempData.map(pt => pt.sum / (pt.count || 1));
-    updateChart('chart-model-temp', createLineChartConfig(modelTempSessionLabels, modelTemps, 'Temperature', techColor));
+    const tempMetricData = metricsData['gen_ai.model.temperature'] || [];
+    const tempVals = agentLabels.map(label => {
+        const pt = tempMetricData.find(d => d.attributes['gen_ai.agent.name'] === label);
+        return pt && pt.count > 0 ? (pt.sum / pt.count) : 0;
+    });
+    updateChart('chart-model-temp', createBarChartConfig(agentDisplayLabels, tempVals, 'Temperature', billingColor));
 
-    const modelTopPData = metricsData['gen_ai.model.top_p'] || [];
-    const modelTopPSessionLabels = modelTopPData.map((pt, i) => `Model #${i+1}`);
-    const modelTopPs = modelTopPData.map(pt => pt.sum / (pt.count || 1));
-    updateChart('chart-model-top-p', createLineChartConfig(modelTopPSessionLabels, modelTopPs, 'Top P', triageColor));
+    const topPMetricData = metricsData['gen_ai.model.top_p'] || [];
+    const topPVals = agentLabels.map(label => {
+        const pt = topPMetricData.find(d => d.attributes['gen_ai.agent.name'] === label);
+        return pt && pt.count > 0 ? (pt.sum / pt.count) : 0;
+    });
+    updateChart('chart-model-top-p', createBarChartConfig(agentDisplayLabels, topPVals, 'Top_P', techColor));
 
-    const modelTopKData = metricsData['gen_ai.model.top_k'] || [];
-    const modelTopKSessionLabels = modelTopKData.map((pt, i) => `Model #${i+1}`);
-    const modelTopKs = modelTopKData.map(pt => pt.sum / (pt.count || 1));
-    updateChart('chart-model-top-k', createLineChartConfig(modelTopKSessionLabels, modelTopKs, 'Top K', supportColor));
+    const topKMetricData = metricsData['gen_ai.model.top_k'] || [];
+    const topKVals = agentLabels.map(label => {
+        const pt = topKMetricData.find(d => d.attributes['gen_ai.agent.name'] === label);
+        return pt && pt.count > 0 ? (pt.sum / pt.count) : 0;
+    });
+    updateChart('chart-model-top-k', createBarChartConfig(agentDisplayLabels, topKVals, 'Top_K', toolColor));
 
     // Update Tab 4 Summary Stats
-    const avgModelLatency = modelLatencies.reduce((a, b) => a + b, 0) / (modelLatencies.length || 1);
-    const avgModelTemp = modelTemps.reduce((a, b) => a + b, 0) / (modelTemps.length || 1);
-    const sumModelChunks = modelChunksCount.reduce((a, b) => a + b, 0);
+    const avgModelLatencyVal = modelLatencies.reduce((a, b) => a + b, 0) / (modelLatencies.filter(v => v > 0).length || 1);
+    const sumModelChunks = modelChunks.reduce((a, b) => a + b, 0);
+    const avgTemp = tempVals.reduce((a, b) => a + b, 0) / (tempVals.filter(v => v > 0).length || 1);
+    const avgTopP = topPVals.reduce((a, b) => a + b, 0) / (topPVals.filter(v => v > 0).length || 1);
 
-    document.getElementById('stat-model-latency').textContent = avgModelLatency.toFixed(1) + ' ms';
-    document.getElementById('stat-model-temp').textContent = avgModelTemp.toFixed(2);
+    document.getElementById('stat-model-latency').textContent = avgModelLatencyVal.toFixed(0) + ' ms';
     document.getElementById('stat-model-chunks').textContent = sumModelChunks;
+    document.getElementById('stat-model-temp').textContent = avgTemp.toFixed(2);
+    document.getElementById('stat-model-top-p').textContent = avgTopP.toFixed(2);
 
     // ----------------------------------------------------
     // TAB 5: SYSTEM RESOURCES (6 Charts & Badges)
     // ----------------------------------------------------
     const cpuData = metricsData['gen_ai.system.cpu.utilization'] || [];
-    const cpuVal = cpuData.length > 0 ? (cpuData[cpuData.length - 1].sum / (cpuData[cpuData.length - 1].count || 1)) : 0;
-    updateChart('chart-sys-cpu', createDoughnutConfig(['Utilized CPU', 'Available CPU'], [cpuVal, 100 - cpuVal], ['#06b6d4', 'rgba(255,255,255,0.03)']));
+    const cpuVals = cpuData.map(pt => pt.sum);
+    const sysLabels = cpuVals.map((_, i) => `Tick #${i+1}`);
+    updateChart('chart-sys-cpu', createLineChartConfig(sysLabels, cpuVals, 'CPU Util (%)', triageColor));
 
     const ramData = metricsData['gen_ai.system.memory.utilization'] || [];
-    const ramVal = ramData.length > 0 ? (ramData[ramData.length - 1].sum / (ramData[ramData.length - 1].count || 1)) : 0;
-    updateChart('chart-sys-ram', createDoughnutConfig(['Utilized RAM', 'Available RAM'], [ramVal, 100 - ramVal], ['#10b981', 'rgba(255,255,255,0.03)']));
+    const ramVals = ramData.map(pt => pt.sum);
+    updateChart('chart-sys-ram', createLineChartConfig(sysLabels, ramVals, 'RAM Util (%)', supportColor));
 
     const diskData = metricsData['gen_ai.system.disk.utilization'] || [];
-    const diskVal = diskData.length > 0 ? (diskData[diskData.length - 1].sum / (diskData[diskData.length - 1].count || 1)) : 0;
-    updateChart('chart-sys-disk', createDoughnutConfig(['Used Disk', 'Free Disk'], [diskVal, 100 - diskVal], ['#a855f7', 'rgba(255,255,255,0.03)']));
+    const diskVals = diskData.map(pt => pt.sum);
+    updateChart('chart-sys-disk', createLineChartConfig(sysLabels, diskVals, 'Disk Util (%)', billingColor));
 
     const netInData = metricsData['gen_ai.system.network.bytes.in'] || [];
-    const netInLabels = netInData.map((pt, i) => `Tick #${i+1}`);
     const netInBytes = netInData.map(pt => pt.value);
+    const netInLabels = netInBytes.map((_, i) => `Tick #${i+1}`);
     updateChart('chart-sys-net-in', createLineChartConfig(netInLabels, netInBytes, 'Network In (Bytes)', triageColor));
 
     const netOutData = metricsData['gen_ai.system.network.bytes.out'] || [];
-    const netOutLabels = netOutData.map((pt, i) => `Tick #${i+1}`);
     const netOutBytes = netOutData.map(pt => pt.value);
+    const netOutLabels = netOutBytes.map((_, i) => `Tick #${i+1}`);
     updateChart('chart-sys-net-out', createLineChartConfig(netOutLabels, netOutBytes, 'Network Out (Bytes)', supportColor));
 
     const activeConnsData = metricsData['gen_ai.system.active.connections'] || [];
@@ -939,6 +965,8 @@ function renderCharts(metricsData) {
     const sumNetOut = netOutBytes.reduce((a, b) => a + b, 0);
     const totalNetThroughputKB = (sumNetIn + sumNetOut) / 1024;
     const currentActiveConnections = conns.length > 0 ? conns[conns.length - 1] : 0;
+    const cpuVal = cpuVals.length > 0 ? cpuVals[cpuVals.length - 1] : 0;
+    const ramVal = ramVals.length > 0 ? ramVals[ramVals.length - 1] : 0;
 
     document.getElementById('stat-sys-cpu').textContent = cpuVal.toFixed(1) + '%';
     document.getElementById('stat-sys-ram').textContent = ramVal.toFixed(1) + '%';
@@ -946,48 +974,42 @@ function renderCharts(metricsData) {
     document.getElementById('stat-sys-net').textContent = totalNetThroughputKB.toFixed(1) + ' KB';
 
     // ----------------------------------------------------
-    // TAB 6: POLICY & GOVERNANCE (6 Charts & Badges)
+    // TAB 7: FINOPS & TOKENOMICS (8 Charts & Badges)
     // ----------------------------------------------------
-    const caBlockedData = metricsData['gen_ai.security.cloud_armor.blocked'] || [];
-    const caBlocked = caBlockedData.map(pt => pt.value);
-    const caBlockedLabels = caBlocked.map((_, i) => `Tick #${i+1}`);
-    updateChart('chart-policy-ca-blocked', createLineChartConfig(caBlockedLabels, caBlocked, 'Blocked Requests', triageColor));
+    updateChart('chart-finops-model-cost', createBarChartConfig(agentDisplayLabels, agentCosts, 'Model Cost ($)', techColor));
 
-    const caViolationsData = metricsData['gen_ai.security.cloud_armor.violations'] || [];
-    const caViolations = caViolationsData.map(pt => pt.value);
-    const caViolationsLabels = caViolations.map((_, i) => `Tick #${i+1}`);
-    updateChart('chart-policy-ca-violations', createLineChartConfig(caViolationsLabels, caViolations, 'Violations', techColor));
+    const costPerTurnData = metricsData['gen_ai.finops.cost_per_turn'] || [];
+    const turnCosts = agentLabels.map(label => {
+        const pt = costPerTurnData.find(d => d.attributes['gen_ai.agent.name'] === label);
+        return pt && pt.count > 0 ? (pt.sum / pt.count) : 0;
+    });
+    updateChart('chart-finops-cost-turn', createBarChartConfig(agentDisplayLabels, turnCosts, 'Cost / Turn ($)', billingColor));
 
-    const maInjectionData = metricsData['gen_ai.security.model_armor.prompt_injection'] || [];
-    const maInjections = maInjectionData.map(pt => pt.value);
-    const maInjectionLabels = maInjections.map((_, i) => `Tick #${i+1}`);
-    updateChart('chart-policy-ma-injection', createLineChartConfig(maInjectionLabels, maInjections, 'Injection Blocks', billingColor));
+    updateChart('chart-finops-token-prompt', createBarChartConfig(agentDisplayLabels, promptTokens, 'Prompt Tokens', triageColor));
+    updateChart('chart-finops-token-completion', createBarChartConfig(agentDisplayLabels, compTokens, 'Completion Tokens', supportColor));
+    updateChart('chart-finops-token-total', createBarChartConfig(agentDisplayLabels, totalTokens, 'Total Tokens', billingColor));
+    updateChart('chart-finops-tokens-active', createLineChartConfig(wfTokenLabels, wfTokens, 'Active Session Tokens', supportColor));
+    updateChart('chart-finops-tool-payload', createBarChartConfig(toolDisplayLabels, toolPayloads, 'Tool Payload (Bytes)', toolColor));
 
-    const maJailbreakData = metricsData['gen_ai.security.model_armor.jailbreak'] || [];
-    const maJailbreaks = maJailbreakData.map(pt => pt.value);
-    const maJailbreakLabels = maJailbreaks.map((_, i) => `Tick #${i+1}`);
-    updateChart('chart-policy-ma-jailbreak', createLineChartConfig(maJailbreakLabels, maJailbreaks, 'Jailbreak Blocks', triageColor));
+    const cacheSavingsData = metricsData['gen_ai.finops.cache_savings_ratio'] || [];
+    const cacheSavingsVals = agentLabels.map(label => {
+        const pt = cacheSavingsData.find(d => d.attributes['gen_ai.agent.name'] === label);
+        return pt && pt.count > 0 ? (pt.sum / pt.count) : 0;
+    });
+    updateChart('chart-finops-cache-savings', createBarChartConfig(agentDisplayLabels, cacheSavingsVals, 'Cache Savings (%)', supportColor));
 
-    const maPiiData = metricsData['gen_ai.security.model_armor.pii_leak'] || [];
-    const maPiiLeaks = maPiiData.map(pt => pt.value);
-    const maPiiLabels = maPiiLeaks.map((_, i) => `Tick #${i+1}`);
-    updateChart('chart-policy-ma-pii', createLineChartConfig(maPiiLabels, maPiiLeaks, 'PII Blocks', supportColor));
+    // Update Tab 7 Summary Stats
+    const sumPromptTokens = promptTokens.reduce((a, b) => a + b, 0);
+    const sumCompTokens = compTokens.reduce((a, b) => a + b, 0);
+    const compPromptRatio = sumPromptTokens > 0 ? (sumCompTokens / sumPromptTokens) : 0;
+    const avgCacheSavings = cacheSavingsVals.reduce((a, b) => a + b, 0) / (cacheSavingsVals.filter(v => v > 0).length || 1);
 
-    const maSafetyData = metricsData['gen_ai.security.model_armor.safety_triggers'] || [];
-    const maSafeties = maSafetyData.map(pt => pt.value);
-    const maSafetyLabels = maSafeties.map((_, i) => `Tick #${i+1}`);
-    updateChart('chart-policy-ma-safety', createLineChartConfig(maSafetyLabels, maSafeties, 'Safety Blocks', techColor));
+    document.getElementById('stat-finops-spend').textContent = '$' + sumCost.toFixed(4);
+    document.getElementById('stat-finops-ratio').textContent = compPromptRatio.toFixed(2);
+    document.getElementById('stat-finops-cache').textContent = avgCacheSavings.toFixed(1) + '%';
+    document.getElementById('stat-finops-egress').textContent = (sumNetOut / 1024).toFixed(1) + ' KB';
 
-    // Update Tab 6 Summary Stats
-    const sumCaBlocks = caBlocked.reduce((a, b) => a + b, 0);
-    const sumMaBlocks = maInjections.reduce((a, b) => a + b, 0) + maJailbreaks.reduce((a, b) => a + b, 0) + maPiiLeaks.reduce((a, b) => a + b, 0) + maSafeties.reduce((a, b) => a + b, 0);
-    const sumViolations = caViolations.reduce((a, b) => a + b, 0);
-
-    document.getElementById('stat-policy-ca-blocks').textContent = sumCaBlocks;
-    document.getElementById('stat-policy-ma-blocks').textContent = sumMaBlocks;
-    document.getElementById('stat-policy-violations').textContent = sumViolations;
-
-    // Update metric signals for ALL 56 metrics dynamically
+    // Update metric signals for ALL 58 metrics dynamically
     const metricsMapping = {
         'chart-invocation-duration': agentDurations,
         'chart-request-size': reqSizes,

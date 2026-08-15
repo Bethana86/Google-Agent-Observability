@@ -309,6 +309,7 @@
                 <button class="tab-btn" data-tab="tab-model">Model Engine</button>
                 <button class="tab-btn" data-tab="tab-resources">System Resources</button>
                 <button class="tab-btn" data-tab="tab-policy">Policy & Governance</button>
+                <button class="tab-btn" data-tab="tab-finops">FinOps & Tokenomics</button>
             </div>
 
             <!-- Tab 1: Agent Performance -->
@@ -1016,6 +1017,111 @@
                         <div class="card-body chart-container">
                             <canvas id="chart-policy-ma-safety"></canvas>
                             <div id="no-data-policy-ma-safety" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 7: FinOps & Tokenomics -->
+            <div class="tab-content" id="tab-finops">
+                <div class="stats-summary-row">
+                    <div class="stat-badge">
+                        <span class="stat-label">Total Model Spend</span>
+                        <strong class="stat-val" id="stat-finops-spend">$0.00</strong>
+                    </div>
+                    <div class="stat-badge">
+                        <span class="stat-label">Completion / Prompt Ratio</span>
+                        <strong class="stat-val" id="stat-finops-ratio">0.00</strong>
+                    </div>
+                    <div class="stat-badge">
+                        <span class="stat-label">Cache Cost Efficiency</span>
+                        <strong class="stat-val" id="stat-finops-cache">0.0%</strong>
+                    </div>
+                    <div class="stat-badge">
+                        <span class="stat-label">Network Egress Vol</span>
+                        <strong class="stat-val" id="stat-finops-egress">0 KB</strong>
+                    </div>
+                </div>
+                
+                <div class="metrics-grid">
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Model API Invocation Cost</h3>
+                            <span class="metric-desc">(USD $)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-finops-model-cost"></canvas>
+                            <div id="no-data-finops-model-cost" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Cost per Conversational Turn</h3>
+                            <span class="metric-desc">(USD $)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-finops-cost-turn"></canvas>
+                            <div id="no-data-finops-cost-turn" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Prompt Input Tokenomics</h3>
+                            <span class="metric-desc">(Tokens)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-finops-token-prompt"></canvas>
+                            <div id="no-data-finops-token-prompt" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Completion Output Tokenomics</h3>
+                            <span class="metric-desc">(Tokens)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-finops-token-completion"></canvas>
+                            <div id="no-data-finops-token-completion" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Total Tokenomics Volume</h3>
+                            <span class="metric-desc">(Tokens)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-finops-token-total"></canvas>
+                            <div id="no-data-finops-token-total" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Active Session Token Footprint</h3>
+                            <span class="metric-desc">(Tokens)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-finops-tokens-active"></canvas>
+                            <div id="no-data-finops-tokens-active" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Tool API Payload Bandwidth</h3>
+                            <span class="metric-desc">(Bytes)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-finops-tool-payload"></canvas>
+                            <div id="no-data-finops-tool-payload" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
+                        </div>
+                    </div>
+                    <div class="card glass-card metric-card">
+                        <div class="card-header">
+                            <h3>Cache Savings Cost Efficiency</h3>
+                            <span class="metric-desc">(%)</span>
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="chart-finops-cache-savings"></canvas>
+                            <div id="no-data-finops-cache-savings" class="chart-no-data">Execute a scenario to populate OTel metrics</div>
                         </div>
                     </div>
                 </div>

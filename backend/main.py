@@ -97,6 +97,11 @@ model_armor_jailbreak = meter.create_counter("gen_ai.security.model_armor.jailbr
 model_armor_pii_leak = meter.create_counter("gen_ai.security.model_armor.pii_leak", description="PII leaks blocked by Model Armor filters")
 model_armor_safety = meter.create_counter("gen_ai.security.model_armor.safety_triggers", description="Toxicity, hate speech or harassment blocks")
 
+# FinOps & Tokenomics (2 total bringing total metrics to 58)
+finops_cost_per_turn = meter.create_histogram("gen_ai.finops.cost_per_turn", description="Estimated API invocation cost per conversational turn in USD")
+finops_token_efficiency = meter.create_histogram("gen_ai.finops.token_efficiency_ratio", description="Output completion to input prompt token efficiency ratio")
+finops_cache_savings = meter.create_histogram("gen_ai.finops.cache_savings_ratio", description="Percentage of tool executions served from cache saving API costs")
+
 from fastapi import FastAPI, Request
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -267,6 +272,11 @@ class MockGeminiLlmConnection(BaseLlmConnection):
         
         cost = (prompt_tokens * 0.0000025) + (completion_tokens * 0.000010)
         agent_cost_histogram.record(cost, {"gen_ai.agent.name": agent_name})
+        finops_cost_per_turn.record(cost, {"gen_ai.agent.name": agent_name, "gen_ai.model": active_model_id})
+        efficiency_ratio = round(completion_tokens / max(1, prompt_tokens), 3)
+        finops_token_efficiency.record(efficiency_ratio, {"gen_ai.agent.name": agent_name, "gen_ai.model": active_model_id})
+        finops_cache_savings.record(random.uniform(25.0, 45.0), {"gen_ai.agent.name": agent_name})
+        
         agent_overhead_histogram.record(random.uniform(2.0, 5.0), {"gen_ai.agent.name": agent_name})
         agent_retry_counter.add(0, {"gen_ai.agent.name": agent_name})
         
