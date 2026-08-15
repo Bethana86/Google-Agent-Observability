@@ -544,6 +544,11 @@ async function fetchMetrics() {
         showChartNoData(false);
         renderCharts(data);
     } catch (e) {
+        console.error("Failed to fetch metrics", e);
+        showChartNoData(true);
+    }
+}
+
 function showChartNoData(show) {
     const overlays = [
         'no-data-invocation-duration', 'no-data-request-size', 'no-data-response-size', 'no-data-workflow-steps',
@@ -1020,48 +1025,48 @@ function renderCharts(metricsData) {
         'chart-token-prompt': promptTokens,
         'chart-token-completion': compTokens,
         'chart-token-total': totalTokens,
-        'chart-agent-cost': costs,
-        'chart-agent-retry': retries,
-        'chart-agent-overhead': overheads,
-        'chart-agent-handoffs': handoffs,
-        'chart-agent-reasoning-drift': drifts,
-        'chart-agent-rca-depth': rcaDepths,
-        'chart-agent-rca-confidence': rcaConfidences,
-        'chart-agent-mem-reads': memReads,
-        'chart-agent-mem-writes': memWrites,
-        'chart-agent-feedback': feedbacks,
-        'chart-agent-fallback': fallbacks,
+        'chart-agent-cost': agentCosts,
+        'chart-agent-retry': agentRetries,
+        'chart-agent-overhead': agentOverhead,
+        'chart-agent-handoffs': agentHandoffs,
+        'chart-agent-reasoning-drift': agentDrift,
+        'chart-agent-rca-depth': agentRcaDepth,
+        'chart-agent-rca-confidence': agentRcaConf,
+        'chart-agent-mem-reads': agentMemReads,
+        'chart-agent-mem-writes': agentMemWrites,
+        'chart-agent-feedback': agentFeedback,
+        'chart-agent-fallback': agentFallback,
 
         'chart-tool-duration': toolDurations,
         'chart-tool-calls': toolCalls,
         'chart-tool-errors': toolErrors,
-        'chart-tool-cache-hit': toolCacheHits,
-        'chart-tool-cache-miss': toolCacheMisses,
+        'chart-tool-cache-hit': toolHits,
+        'chart-tool-cache-miss': toolMisses,
         'chart-tool-payload': toolPayloads,
-        'chart-tool-concurrency': toolConcurrencies,
+        'chart-tool-concurrency': toolConcs,
         'chart-tool-timeout': toolTimeouts,
 
         'chart-workflow-duration': wfDurations,
-        'chart-workflow-active': activeCounts,
-        'chart-workflow-memory': wfMemSizes,
-        'chart-workflow-tokens': wfTokenCounts,
-        'chart-workflow-turns': wfTurnsCounts,
-        'chart-workflow-run-success': wfSuccessCounts,
-        'chart-workflow-run-error': wfErrorCounts,
-        'chart-workflow-queue-delay': wfDelayCounts,
+        'chart-workflow-active': wfActive,
+        'chart-workflow-memory': wfMemories,
+        'chart-workflow-tokens': wfTokens,
+        'chart-workflow-turns': wfTurns,
+        'chart-workflow-run-success': wfSuccesses,
+        'chart-workflow-run-error': wfErrors,
+        'chart-workflow-queue-delay': wfQueueDelays,
         'chart-workflow-handoff-depth': wfHandoffDepths,
-        'chart-workflow-concurrency-limit': wfConcurrencyLimits,
+        'chart-workflow-concurrency-limit': wfConcLimits,
 
         'chart-model-latency': modelLatencies,
-        'chart-model-chunks': modelChunksCount,
-        'chart-model-chunk-latency': modelChunkLatencies,
-        'chart-model-temp': modelTemps,
-        'chart-model-top-p': modelTopPs,
-        'chart-model-top-k': modelTopKs,
+        'chart-model-chunks': modelChunks,
+        'chart-model-chunk-latency': modelChunkLats,
+        'chart-model-temp': tempVals,
+        'chart-model-top-p': topPVals,
+        'chart-model-top-k': topKVals,
 
-        'chart-sys-cpu': [cpuVal],
-        'chart-sys-ram': [ramVal],
-        'chart-sys-disk': [diskVal],
+        'chart-sys-cpu': cpuVals,
+        'chart-sys-ram': ramVals,
+        'chart-sys-disk': diskVals,
         'chart-sys-net-in': netInBytes,
         'chart-sys-net-out': netOutBytes,
         'chart-sys-active-conns': conns,
@@ -1071,7 +1076,16 @@ function renderCharts(metricsData) {
         'chart-policy-ma-injection': maInjections,
         'chart-policy-ma-jailbreak': maJailbreaks,
         'chart-policy-ma-pii': maPiiLeaks,
-        'chart-policy-ma-safety': maSafeties
+        'chart-policy-ma-safety': maSafeties,
+
+        'chart-finops-model-cost': agentCosts,
+        'chart-finops-cost-turn': turnCosts,
+        'chart-finops-token-prompt': promptTokens,
+        'chart-finops-token-completion': compTokens,
+        'chart-finops-token-total': totalTokens,
+        'chart-finops-tokens-active': wfTokens,
+        'chart-finops-tool-payload': toolPayloads,
+        'chart-finops-cache-savings': cacheSavingsVals
     };
 
     // Evaluate and construct Active Alerts dynamically
