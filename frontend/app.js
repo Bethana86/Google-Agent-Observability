@@ -481,6 +481,7 @@ function getTimestamp() {
 }
 
 function logSystemMessage(label, text, className = 'system-line', badgeType = 'info') {
+    if (!logTerminal) return;
     const div = document.createElement('div');
     div.className = `terminal-line ${className}`;
     div.innerHTML = `<span class="timestamp">[${getTimestamp()}]</span><span class="badge-log ${badgeType}">${label}</span> ${text}`;
@@ -489,6 +490,7 @@ function logSystemMessage(label, text, className = 'system-line', badgeType = 'i
 }
 
 function logAgentResponse(agentName, text) {
+    if (!logTerminal) return;
     const div = document.createElement('div');
     div.className = 'terminal-line agent-line';
     div.innerHTML = `
@@ -501,6 +503,7 @@ function logAgentResponse(agentName, text) {
 }
 
 function logToolCall(agentName, toolName, args) {
+    if (!logTerminal) return;
     const div = document.createElement('div');
     div.className = 'terminal-line tool-line';
     div.innerHTML = `
@@ -516,6 +519,7 @@ function logToolCall(agentName, toolName, args) {
 }
 
 function logToolResponse(agentName, toolName, response) {
+    if (!logTerminal) return;
     const div = document.createElement('div');
     div.className = 'terminal-line trace-line';
     div.innerHTML = `

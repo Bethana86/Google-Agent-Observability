@@ -133,7 +133,10 @@
                     </div>
                 </div>
 
-                <!-- Live Agent Handoff Flow Diagram (DAG) -->
+            </div>
+
+            <!-- Right Side: Live Agent Flow & Routing DAG Chart -->
+            <div class="grid-col right-col">
                 <div class="card glass-card">
                     <div class="card-header">
                         <h2><i class="fa-solid fa-diagram-project"></i> Live Agent Flow & Multi-Model Routing</h2>
@@ -211,28 +214,6 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Right Side: Cloud Trace & Logs -->
-            <div class="grid-col right-col">
-                <div class="card glass-card terminal-card">
-                    <div class="card-header terminal-header">
-                        <div class="terminal-left">
-                            <span class="terminal-dot red"></span>
-                            <span class="terminal-dot yellow"></span>
-                            <span class="terminal-dot green"></span>
-                            <span class="terminal-title"><i class="fa-solid fa-terminal"></i> Google Cloud Trace & Logging Console</span>
-                        </div>
-                        <div class="terminal-right">
-                            <span id="session-badge" class="session-badge">SESSION: NONE</span>
-                        </div>
-                    </div>
-                    <div class="card-body terminal-body" id="log-terminal">
-                        <div class="terminal-line system-line">
-                            <span class="timestamp">[SYSTEM INITIALIZED]</span> OpenTelemetry metrics reader listening on <code>gcp.vertex.agent</code>. Select a scenario and execute to view traces.
                         </div>
                     </div>
                 </div>
@@ -1100,6 +1081,6 @@
     </div>
 
     <!-- Main Javascript -->
-    <script src="/static/app.js?v=1.3.0"></script>
+    <script src="/static/app.js?v=1.4.0"></script>
 </body>
 </html>
