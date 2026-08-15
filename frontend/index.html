@@ -19,43 +19,58 @@
         <!-- Header -->
         <header class="app-header">
             <div class="header-left">
-                <div class="logo-container">
-                    <div class="otel-logo">
-                        <span class="logo-ring outer"></span>
-                        <span class="logo-ring inner"></span>
-                        <span class="logo-dot"></span>
-                    </div>
+                <div class="tcs-logo-container">
+                    <img src="/static/tcs_logo.jpg?v=1.1.0" alt="TCS Logo" class="header-tcs-logo">
                 </div>
                 <div class="header-titles">
-                    <h1>Google ADK Observability <span class="badge">Multi-Agent</span></h1>
-                    <p>Production Telemetry & Lifecycle Tracing for Gemini Enterprise Agent platform</p>
+                    <h1>Agent Management Platform</h1>
+                    <p>Agent Observability & lifecycle tracing for Google ADK</p>
                 </div>
             </div>
             <div class="header-right">
                 <div class="status-indicator">
-                    <span class="pulse-dot"></span>
-                    <span class="status-text">Collector: ACTIVE (127.0.0.1:8000)</span>
+                    <span class="pulse-dot green"></span>
+                    <span class="status-text">Live: WebSocket</span>
                 </div>
                 <div class="status-indicator engine-indicator" id="engine-badge">
                     <span class="pulse-dot blue" id="engine-dot"></span>
-                    <span class="status-text" id="engine-text">Engine: Loading...</span>
+                    <span class="status-text" id="engine-text">Engine: SIMULATION</span>
                 </div>
                 <button id="btn-theme-toggle" class="btn btn-secondary" title="Toggle Light/Dark Theme">
-                    <i class="fa-solid fa-sun" id="theme-icon"></i> <span id="theme-text">Light Mode</span>
+                    <i class="fa-solid fa-moon" id="theme-icon"></i> <span id="theme-text">Dark</span>
                 </button>
                 <button id="btn-reset-all" class="btn btn-secondary">
-                    <i class="fa-solid fa-rotate-left"></i> Reset Metrics
+                    <i class="fa-solid fa-rotate-left"></i> Reset
                 </button>
             </div>
         </header>
 
-        <!-- Banner Info -->
-        <section class="info-banner">
-            <div class="banner-icon">
-                <i class="fa-solid fa-circle-info"></i>
+        <!-- Top KPI Row (5 Cards) -->
+        <section class="top-kpi-row">
+            <div class="kpi-card-top">
+                <span class="kpi-card-title">SUCCESS RATE (SLO)</span>
+                <strong class="kpi-card-val" id="kpi-success-rate">100.0%</strong>
+                <span class="kpi-card-sub">Target &ge; 99.5%</span>
             </div>
-            <div class="banner-content">
-                <strong>Google Native ADK & OpenTelemetry Integration:</strong> This console captures multi-agent telemetry using OpenTelemetry <code>gcp.vertex.agent</code> histograms inside the <code>google-adk</code> lifecycle runner. Supports real-time custom prompt execution, preset scenarios, and exports directly to <strong>Google Cloud Monitoring</strong> and <strong>Google Cloud Trace</strong>.
+            <div class="kpi-card-top">
+                <span class="kpi-card-title">AVG LATENCY (SLO)</span>
+                <strong class="kpi-card-val" id="kpi-latency-val">0 ms</strong>
+                <span class="kpi-card-sub">Target &lt; 5s</span>
+            </div>
+            <div class="kpi-card-top">
+                <span class="kpi-card-title">RUNNING COST (KPI)</span>
+                <strong class="kpi-card-val" id="kpi-cost-val">$0.0000</strong>
+                <span class="kpi-card-sub">Budget &lt; $5.00</span>
+            </div>
+            <div class="kpi-card-top">
+                <span class="kpi-card-title">CSAT (KPI)</span>
+                <strong class="kpi-card-val" id="kpi-csat-val">5.0 / 5.0</strong>
+                <span class="kpi-card-sub">Target &ge; 4.5</span>
+            </div>
+            <div class="kpi-card-top">
+                <span class="kpi-card-title">AGENT RISK SCORE</span>
+                <div class="kpi-card-val-row"><strong id="kpi-risk-num">0</strong> <span class="risk-badge-low">LOW</span></div>
+                <span class="kpi-card-sub">0-100 composite</span>
             </div>
         </section>
 
@@ -107,6 +122,12 @@
                                 <button id="btn-run-live-query" class="btn btn-secondary btn-send">
                                     <i class="fa-solid fa-paper-plane"></i> Run
                                 </button>
+                            </div>
+                            <div class="governance-demo-row">
+                                <span class="gov-demo-label"><i class="fa-solid fa-shield-halved"></i> Governance demo:</span>
+                                <span class="gov-pill">Prompt Injection</span>
+                                <span class="gov-pill">Jailbreak</span>
+                                <span class="gov-pill">PII Leak</span>
                             </div>
                         </div>
                     </div>
@@ -218,74 +239,17 @@
             </div>
         </div>
 
-        <!-- SLOs, Business KPIs & Active Alerts Section -->
-        <section class="slo-kpi-alerts-section">
-            <div class="kpi-alerts-grid">
-                <!-- Left: SLO & KPI Panel -->
-                <div class="card glass-card kpi-panel">
-                    <div class="card-header">
-                        <h2><i class="fa-solid fa-gauge-high"></i> Service Level Objectives (SLOs) & Business KPIs</h2>
-                        <span class="card-subtitle">Real-time tracking of platform service levels, cost budgets, and compliance</span>
-                    </div>
-                    <div class="card-body kpi-grid">
-                        <div class="kpi-card">
-                            <div class="kpi-icon"><i class="fa-solid fa-square-check" style="color: var(--color-support);"></i></div>
-                            <div class="kpi-details">
-                                <span class="kpi-label">Workflow Success Rate (SLO)</span>
-                                <div class="kpi-value-row">
-                                    <strong class="kpi-value" id="kpi-success-rate">100.0%</strong>
-                                    <span class="kpi-target">Target: &ge;99.5%</span>
-                                </div>
-                                <div class="progress-bar-bg"><div class="progress-bar-fill green" id="kpi-success-fill" style="width: 100%;"></div></div>
-                            </div>
-                        </div>
-                        <div class="kpi-card">
-                            <div class="kpi-icon"><i class="fa-solid fa-clock-rotate-left" style="color: var(--color-triage);"></i></div>
-                            <div class="kpi-details">
-                                <span class="kpi-label">Avg Invocation Latency (SLO)</span>
-                                <div class="kpi-value-row">
-                                    <strong class="kpi-value" id="kpi-latency-val">0 ms</strong>
-                                    <span class="kpi-target">Target: &lt;5.0s</span>
-                                </div>
-                                <div class="progress-bar-bg"><div class="progress-bar-fill green" id="kpi-latency-fill" style="width: 100%;"></div></div>
-                            </div>
-                        </div>
-                        <div class="kpi-card">
-                            <div class="kpi-icon"><i class="fa-solid fa-circle-dollar-to-slot" style="color: var(--color-billing);"></i></div>
-                            <div class="kpi-details">
-                                <span class="kpi-label">Running Token Budget (KPI)</span>
-                                <div class="kpi-value-row">
-                                    <strong class="kpi-value" id="kpi-cost-val">$0.00</strong>
-                                    <span class="kpi-target">Budget: &lt;$5.00</span>
-                                </div>
-                                <div class="progress-bar-bg"><div class="progress-bar-fill green" id="kpi-cost-fill" style="width: 0%;"></div></div>
-                            </div>
-                        </div>
-                        <div class="kpi-card">
-                            <div class="kpi-icon"><i class="fa-solid fa-face-laugh-beam" style="color: var(--color-tech);"></i></div>
-                            <div class="kpi-details">
-                                <span class="kpi-label">User CSAT Score (KPI)</span>
-                                <div class="kpi-value-row">
-                                    <strong class="kpi-value" id="kpi-csat-val">5.0 / 5.0</strong>
-                                    <span class="kpi-target">Target: &ge;4.5</span>
-                                </div>
-                                <div class="progress-bar-bg"><div class="progress-bar-fill green" id="kpi-csat-fill" style="width: 100%;"></div></div>
-                            </div>
-                        </div>
-                    </div>
+        <!-- Active Platform Alerts Section -->
+        <section class="active-alerts-bottom-section">
+            <div class="card glass-card alerts-panel-wide">
+                <div class="card-header alert-panel-header">
+                    <h2><i class="fa-solid fa-bell animate-pulse" style="color: var(--color-triage);"></i> Active Platform Alerts</h2>
+                    <span class="alert-status-badge green" id="global-alert-status">ALL SLOS COMPLIANT</span>
                 </div>
-
-                <!-- Right: Active Alerts & Incident Feed -->
-                <div class="card glass-card alerts-panel">
-                    <div class="card-header alert-panel-header">
-                        <h2><i class="fa-solid fa-bell animate-pulse" style="color: var(--color-triage);"></i> Active Platform Alerts</h2>
-                        <span class="alert-status-badge green" id="global-alert-status">All SLOs Compliant</span>
-                    </div>
-                    <div class="card-body alerts-feed" id="alerts-feed-container">
-                        <div class="alert-item empty-state">
-                            <i class="fa-solid fa-shield-halved"></i>
-                            <p>No active incidents or alert notifications generated. All platform thresholds are inside SLA limits.</p>
-                        </div>
+                <div class="card-body alerts-feed" id="alerts-feed-container">
+                    <div class="alert-item empty-state">
+                        <i class="fa-solid fa-shield-halved"></i>
+                        <p>No active incidents. All thresholds within SLA limits.</p>
                     </div>
                 </div>
             </div>

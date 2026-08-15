@@ -135,10 +135,94 @@ body {
     gap: 1.2rem;
 }
 
-.logo-container {
-    position: relative;
-    width: 44px;
-    height: 44px;
+.tcs-logo-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+    padding: 0.4rem 0.8rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.header-tcs-logo {
+    height: 32px;
+    width: auto;
+    object-fit: contain;
+}
+
+/* Top KPI 5-Card Horizontal Grid Row */
+.top-kpi-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1.2rem;
+    width: 100%;
+}
+
+.kpi-card-top {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    padding: 1.1rem 1.4rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.kpi-card-top:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+.kpi-card-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.kpi-card-val {
+    font-size: 1.65rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0.35rem 0;
+    letter-spacing: -0.02em;
+}
+
+.kpi-card-val-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.35rem 0;
+}
+
+.kpi-card-val-row strong {
+    font-size: 1.65rem;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.risk-badge-low {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border-radius: 6px;
+    letter-spacing: 0.05em;
+}
+
+.kpi-card-sub {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.alerts-panel-wide {
+    width: 100%;
 }
 
 .otel-logo {
@@ -1259,4 +1343,34 @@ body {
 @keyframes fadeInSlide {
     from { opacity: 0; transform: translateY(5px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+/* Governance Demo Pills Row */
+.governance-demo-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.8rem;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+}
+
+.gov-demo-label {
+    font-weight: 600;
+}
+
+.gov-pill {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    padding: 0.15rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.gov-pill:hover {
+    background: rgba(239, 68, 68, 0.2);
 }
