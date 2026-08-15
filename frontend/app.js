@@ -595,6 +595,27 @@ function renderCharts(metricsData) {
     // ----------------------------------------------------
     // TAB 1: AGENT PERFORMANCE (13 Charts & Badges)
     // ----------------------------------------------------
+    const latencyData = metricsData['gen_ai.agent.invocation.duration'] || [];
+    const agentDurations = agentLabels.map(label => {
+        const pt = latencyData.find(d => d.attributes['gen_ai.agent.name'] === label);
+        return pt && pt.count > 0 ? (pt.sum / pt.count) : 0;
+    });
+    updateChart('chart-invocation-duration', createBarChartConfig(agentDisplayLabels, agentDurations, 'Avg Duration (ms)', [triageColor, supportColor, billingColor, techColor]));
+
+    const reqSizeData = metricsData['gen_ai.agent.request.size'] || [];
+    const reqSizes = agentLabels.map(label => {
+        const pt = reqSizeData.find(d => d.attributes['gen_ai.agent.name'] === label);
+        return pt ? pt.sum : 0;
+    });
+    updateChart('chart-request-size', createBarChartConfig(agentDisplayLabels, reqSizes, 'Request Size (Bytes)', triageColor));
+
+    const respSizeData = metricsData['gen_ai.agent.response.size'] || [];
+    const respSizes = agentLabels.map(label => {
+        const pt = respSizeData.find(d => d.attributes['gen_ai.agent.name'] === label);
+        return pt ? pt.sum : 0;
+    });
+    updateChart('chart-response-size', createBarChartConfig(agentDisplayLabels, respSizes, 'Response Size (Bytes)', supportColor));
+
     const stepsData = metricsData['gen_ai.agent.workflow.steps'] || [];
     const steps = agentLabels.map(label => {
         const pt = stepsData.find(d => d.attributes['gen_ai.agent.name'] === label);
