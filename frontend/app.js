@@ -1435,3 +1435,7 @@ function updateMetricSignal(id, isHealthy) {
         el.className = isHealthy ? 'status-signal-dot green' : 'status-signal-dot red';
     }
 }
+
+// Initial metrics fetch and 3-second auto-refresh polling
+fetchMetrics();
+setInterval(fetchMetrics, 3000);
